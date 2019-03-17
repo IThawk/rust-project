@@ -1,0 +1,20 @@
+error: attribute must be of the form `#[marker]`
+  --> $DIR/marker-attribute-with-values.rs:3:1
+   |
+LL | #[marker(always)]
+   | ^^^^^^^^^^^^^^^^^
+
+error: attribute must be of the form `#[marker]`
+  --> $DIR/marker-attribute-with-values.rs:7:1
+   |
+LL | #[marker("never")]
+   | ^^^^^^^^^^^^^^^^^^
+
+error: attribute must be of the form `#[marker]`
+  --> $DIR/marker-attribute-with-values.rs:11:1
+   |
+LL | #[marker(key = "value")]
+   | ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 3 previous errors
+

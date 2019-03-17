@@ -1,0 +1,13 @@
+error[E0597]: `p` does not live long enough
+  --> $DIR/issue-18118.rs:4:10
+   |
+LL |         &p
+   |          ^ borrowed value does not live long enough
+LL |     };
+   |     - borrowed value only lives until here
+   |
+   = note: borrowed value must be valid for the static lifetime...
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0597`.

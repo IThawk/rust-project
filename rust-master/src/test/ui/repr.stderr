@@ -1,0 +1,20 @@
+error: attribute must be of the form `#[repr(C, packed, ...)]`
+  --> $DIR/repr.rs:1:1
+   |
+LL | #[repr]
+   | ^^^^^^^
+
+error: attribute must be of the form `#[repr(C, packed, ...)]`
+  --> $DIR/repr.rs:5:1
+   |
+LL | #[repr = "B"]
+   | ^^^^^^^^^^^^^
+
+error: attribute must be of the form `#[repr(C, packed, ...)]`
+  --> $DIR/repr.rs:9:1
+   |
+LL | #[repr = "C"]
+   | ^^^^^^^^^^^^^
+
+error: aborting due to 3 previous errors
+
