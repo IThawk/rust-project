@@ -1,0 +1,5 @@
+default_host_triple = "x86_64-pc-windows-msvc"
+default_toolchain = "stable"
+version = "12"
+
+[overrides]

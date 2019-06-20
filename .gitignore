@@ -1,0 +1,2 @@
+/rust-demo/hello_world/target
+/rust-demo/hello_world/*.lock
