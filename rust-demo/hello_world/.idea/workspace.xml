@@ -10,30 +10,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d7f78904-a726-49df-8e4b-8e5d871f897b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.vscode/launch.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vscode/launch.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/.rustc_info.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/.cargo-lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/hello_world-d13aba8bfdf312cc/bin-hello_world-d13aba8bfdf312cc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/hello_world-d13aba8bfdf312cc/bin-hello_world-d13aba8bfdf312cc.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/hello_world-d13aba8bfdf312cc/dep-bin-hello_world-d13aba8bfdf312cc" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/hello_world-d13aba8bfdf312cc/invoked.timestamp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/deps/hello_world-d13aba8bfdf312cc.d" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/deps/hello_world-d13aba8bfdf312cc.exe" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/deps/hello_world-d13aba8bfdf312cc.pdb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/hello_world.d" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/hello_world.exe" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/hello_world.pdb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/2h2yw2ihyi4k6q5h.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/37lt5yp1oqtolms6.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/38rno2yjt54xzw5k.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/4mb7ptjxj8j1jeh8.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/4tqvfnbtddk48rsp.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/dep-graph.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/oguvsrt8uth2pap.o" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/query-cache.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0-lpu11teyoke9/work-products.bin" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/debug/incremental/hello_world-3bbx2ej6xz29w/s-fafdhueu1p-vtabi0.lock" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -45,21 +25,24 @@
     <session id="-491830091">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="1" />
+          <entry key="project.closed" value="5" />
           <entry key="project.open.time.2" value="1" />
-          <entry key="project.open.time.5" value="2" />
-          <entry key="project.opened" value="3" />
+          <entry key="project.open.time.4" value="1" />
+          <entry key="project.open.time.5" value="5" />
+          <entry key="project.opened" value="7" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="Run hello_world (disassembly)" value="1" />
           <entry key="rs" value="1" />
+          <entry key="vmoptions" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="Disassembly" value="1" />
+          <entry key="PLAIN_TEXT" value="1" />
           <entry key="Rust" value="1" />
         </counts>
       </usages-collector>
@@ -70,8 +53,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="57">
-              <caret line="3" selection-start-line="3" selection-end-line="3" />
+            <state relative-caret-position="209">
+              <caret line="11" selection-start-line="11" selection-end-line="11" />
             </state>
           </provider>
         </entry>
@@ -81,6 +64,13 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
   </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$APPLICATION_CONFIG_DIR$/clion64.exe.vmoptions" />
+      </list>
+    </option>
+  </component>
   <component name="JsBuildToolGruntFileManager" detection-done="true" sorting="DEFINITION_ORDER" />
   <component name="JsBuildToolPackageJson" detection-done="true" sorting="DEFINITION_ORDER" />
   <component name="JsGulpfileManager">
@@ -88,8 +78,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="263" />
-    <option name="y" value="5" />
+    <option name="x" value="449" />
+    <option name="y" value="8" />
     <option name="width" value="1400" />
     <option name="height" value="1000" />
   </component>
@@ -99,6 +89,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -115,14 +106,13 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
-    <property name="settings.editor.selected.configurable" value="language.rust" />
+    <property name="settings.editor.selected.configurable" value="CPPToolchains" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -166,22 +156,26 @@
       <workItem from="1561040921333" duration="79000" />
       <workItem from="1561041013738" duration="3143000" />
       <workItem from="1561046512365" duration="262000" />
+      <workItem from="1561160903848" duration="604000" />
+      <workItem from="1561165021840" duration="2336000" />
+      <workItem from="1561167519491" duration="4000" />
+      <workItem from="1561169308295" duration="541000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="3484000" />
+    <option name="totallyTimeSpent" value="6969000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="263" y="5" width="1400" height="1000" extended-state="0" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25746268" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.27238807" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32947975" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.4" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -207,12 +201,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/main.rs</url>
-          <line>1</line>
+          <line>7</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/main.rs</url>
-          <line>2</line>
+          <line>8</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
@@ -222,10 +216,17 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$APPLICATION_CONFIG_DIR$/clion64.exe.vmoptions">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="304">
+          <caret line="16" column="63" selection-start-line="16" selection-start-column="63" selection-end-line="16" selection-end-column="63" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main.rs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="57">
-          <caret line="3" selection-start-line="3" selection-end-line="3" />
+        <state relative-caret-position="209">
+          <caret line="11" selection-start-line="11" selection-end-line="11" />
         </state>
       </provider>
     </entry>
