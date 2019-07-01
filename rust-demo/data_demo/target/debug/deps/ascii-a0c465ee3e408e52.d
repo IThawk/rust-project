@@ -1,0 +1,9 @@
+F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\libascii-a0c465ee3e408e52.rlib: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_char.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_str.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_string.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\free_functions.rs
+
+F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\ascii-a0c465ee3e408e52.d: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_char.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_str.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_string.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\free_functions.rs
+
+C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\lib.rs:
+C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_char.rs:
+C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_str.rs:
+C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\ascii_string.rs:
+C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\ascii-0.9.1\src\free_functions.rs:
