@@ -10,7 +10,73 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d5cc160f-1b7d-4795-9ee4-c0f114300248" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../hello_world/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../hello_world/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/hashMap.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/hash_map.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/bin-data_demo-877a0d7452086696" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/bin-data_demo-877a0d7452086696" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/bin-data_demo-877a0d7452086696.json" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/bin-data_demo-877a0d7452086696.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/dep-bin-data_demo-877a0d7452086696" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/.fingerprint/data_demo-877a0d7452086696/dep-bin-data_demo-877a0d7452086696" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/data_demo.d" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/data_demo.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/data_demo.exe" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/data_demo.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/deps/data_demo-877a0d7452086696.d" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/deps/data_demo-877a0d7452086696.d" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/deps/data_demo-877a0d7452086696.exe" beforeDir="false" afterPath="$PROJECT_DIR$/target/debug/deps/data_demo-877a0d7452086696.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/11sm4ah4tusix3qu.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/1akr8bo00t6ktgg3.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/1l0jwwhp3oz3p6xm.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/21fvbcwyftzyc8tr.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/23dtac60a25o8eu4.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/26du2gok4fdp248y.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/2748m6ru764f3oud.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/27wj6ep62gwphy6o.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/2awduhbmeuud3hpt.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/2c7m3m02svlry1k8.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/2et5bvy2wi0lbjd4.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/2gyq32m6nkdnahci.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/333hf038dxupc7yt.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/35s0jfeeh27xs0p2.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/378w3xsgu247rp0a.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3c7j039y70f2j7xd.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3eyzepkn0tb8abm9.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3f191tqjp6kvhyv2.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3fvnmjgnuzbz6jo6.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3g0sxc8gryx5n4mt.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3imkocxrs6weh4kk.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3jul71bcyygfbil0.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3njmggl6j8bx0wiu.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3sehmlj2s240o8i0.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3vbou24shga9ungf.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3wgyw8p6ihpeqa1e.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/3ywye6qmahphjjl8.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/41stqso5s5053ue.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/43b486ufueusoy84.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/46knu1zws8p4s143.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/48nqbxfhqy0db4sg.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/4aobhayru9ace25i.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/4flv0dbvrbj1dryp.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/4g801bqu2uvpsqa9.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/4rsqqz8fwreopvzx.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/517j96e29p6ukfzc.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/51agbsv0hkqoge52.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/520syqt8sinf0r1y.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/578v24hml17kyu1t.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/5b3ptsqb2yjkvkfx.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/5bas4gfcbwqblkp8.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/5dr449e0r2vtqsi2.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/96etmkltmrk7ecd.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/cvotkwjrc0ckd9o.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/dep-graph.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/hrmeg983uid3yha.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/ndcb24fjshydkcg.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/nlwzh8u5vvgobdd.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/p3ur4b04ezvmli8.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/pps1d24qmsyj2vh.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/query-cache.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/rqwzv2mg92yrzyy.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/work-products.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/x48evizhe1alxg9.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/zfz56al0v6vs47h.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/zs17uh9tj9vt2pl.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk-2scnv83rxl8d5/zyk1x5pmj7anknl.o" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/target/debug/incremental/data_demo-3ziof2c039so/s-fdoiocr666-1xl42uk.lock" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,8 +88,10 @@
     <session id="474498741">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
+          <entry key="project.closed" value="1" />
           <entry key="project.open.time.0" value="1" />
-          <entry key="project.opened" value="1" />
+          <entry key="project.open.time.7" value="1" />
+          <entry key="project.opened" value="2" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -40,39 +108,39 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="rs" value="842" />
+          <entry key="rs" value="947" />
           <entry key="toml" value="40" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="40" />
-          <entry key="Rust" value="842" />
+          <entry key="Rust" value="947" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
-    <leaf>
-      <file pinned="false" current-in-tab="false">
+    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="171">
-              <caret line="9" column="20" selection-start-line="9" selection-start-column="20" selection-end-line="9" selection-end-column="20" />
+            <state relative-caret-position="190">
+              <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/hashMap.rs">
+        <entry file="file://$PROJECT_DIR$/src/hash_map.rs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="323">
-              <caret line="35" column="9" selection-start-line="35" selection-start-column="9" selection-end-line="35" selection-end-column="9" />
+            <state relative-caret-position="209">
+              <caret line="36" column="7" selection-start-line="36" selection-start-column="7" selection-end-line="36" selection-end-column="7" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Cargo.toml">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="209">
@@ -102,9 +170,9 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/src/string.rs" />
-        <option value="$PROJECT_DIR$/src/main.rs" />
-        <option value="$PROJECT_DIR$/src/hashMap.rs" />
         <option value="$PROJECT_DIR$/Cargo.toml" />
+        <option value="$PROJECT_DIR$/src/hashMap.rs" />
+        <option value="$PROJECT_DIR$/src/main.rs" />
       </list>
     </option>
   </component>
@@ -115,10 +183,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="464" />
-    <option name="y" value="67" />
-    <option name="width" value="1400" />
-    <option name="height" value="1012" />
+    <option name="x" value="4" />
+    <option name="y" value="11" />
+    <option name="width" value="1039" />
+    <option name="height" value="969" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -147,7 +215,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../http_demo" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
@@ -193,35 +261,35 @@
       <option name="presentableId" value="Default" />
       <updated>1561991382776</updated>
       <workItem from="1561991387250" duration="3863000" />
+      <workItem from="1562077408322" duration="437000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="3863000" />
+    <option name="totallyTimeSpent" value="4300000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="464" y="67" width="1400" height="1012" extended-state="0" />
-    <editor active="true" />
+    <frame x="4" y="11" width="1039" height="969" extended-state="0" />
     <layout>
-      <window_info id="Favorites" side_tool="true" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20735444" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Database Changes" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Version Control" />
-      <window_info anchor="bottom" id="Terminal" />
-      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3249715" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3249715" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3990878" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="right" id="Cargo" />
-      <window_info anchor="right" id="Database" />
+      <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Version Control" order="8" />
+      <window_info anchor="bottom" id="Terminal" order="9" />
+      <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" id="Cargo" order="3" />
+      <window_info anchor="right" id="Database" order="4" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -234,24 +302,24 @@
     <entry file="file://$PROJECT_DIR$/src/string.rs">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="171">
-          <caret line="9" column="20" selection-start-line="9" selection-start-column="20" selection-end-line="9" selection-end-column="20" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/hashMap.rs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="323">
-          <caret line="35" column="9" selection-start-line="35" selection-start-column="9" selection-end-line="35" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Cargo.toml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="209">
           <caret line="11" column="16" selection-start-line="11" selection-start-column="16" selection-end-line="11" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/hash_map.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="209">
+          <caret line="36" column="7" selection-start-line="36" selection-start-column="7" selection-end-line="36" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main.rs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="10" lean-forward="true" selection-start-line="10" selection-end-line="10" />
         </state>
       </provider>
     </entry>

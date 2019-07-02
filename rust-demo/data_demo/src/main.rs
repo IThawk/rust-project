@@ -1,12 +1,11 @@
 mod string;
-mod hashMap;
+mod hash_map;
 
-use std::collections::HashMap;
 fn main() {
     println!("Hello, world!");
 
     println!("{}",string::new_string("ssss"));
 
-    hashMap::main();
+    hash_map::main();
 }
 

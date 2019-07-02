@@ -1,1 +1,0 @@
-{"rustc":7181895507979205895,"features":"","target":0,"profile":0,"path":0,"deps":[["winapi v0.3.7","build_script_build",18022525872164650580]],"local":[{"MtimeBased":[[1561994987,499517800],"build\\winapi-5352c39ddabe671f\\output"]},{"EnvBased":["WINAPI_NO_BUNDLED_LIBRARIES",null]},{"EnvBased":["WINAPI_STATIC_NOBUNDLE",null]}],"rustflags":[],"metadata":0}

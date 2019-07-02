@@ -1,8 +1,0 @@
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\libcrossbeam_queue-e09d762e71809a43.rlib: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\array_queue.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\err.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\seg_queue.rs
-
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\crossbeam_queue-e09d762e71809a43.d: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\array_queue.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\err.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\seg_queue.rs
-
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\lib.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\array_queue.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\err.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\crossbeam-queue-0.1.2\src\seg_queue.rs:

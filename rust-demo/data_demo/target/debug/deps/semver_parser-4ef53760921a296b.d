@@ -1,9 +1,0 @@
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\libsemver_parser-4ef53760921a296b.rlib: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\version.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\range.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\common.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\recognize.rs
-
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\semver_parser-4ef53760921a296b.d: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\version.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\range.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\common.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\recognize.rs
-
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\lib.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\version.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\range.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\common.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\semver-parser-0.7.0\src\recognize.rs:

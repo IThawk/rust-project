@@ -1,9 +1,0 @@
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\libtokio_udp-39a802f45cfde532.rlib: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\frame.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\socket.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\send_dgram.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\recv_dgram.rs
-
-F:\workspace\language\rust\rust-project\rust-demo\data_demo\target\debug\deps\tokio_udp-39a802f45cfde532.d: C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\lib.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\frame.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\socket.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\send_dgram.rs C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\recv_dgram.rs
-
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\lib.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\frame.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\socket.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\send_dgram.rs:
-C:\Users\Administrator\.cargo\registry\src\mirrors.ustc.edu.cn-61ef6e0cd06fb9b8\tokio-udp-0.1.3\src\recv_dgram.rs:

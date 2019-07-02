@@ -1,2 +1,4 @@
 /rust-demo/hello_world/target
 /rust-demo/hello_world/*.lock
+/rust-demo/data_demo/target
+/rust-demo/http_demo/target
