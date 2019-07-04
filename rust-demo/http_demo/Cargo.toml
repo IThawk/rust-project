@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 hyper = "*"
 pretty_env_logger = "*"
+log = "*"
+env_logger = "0.6.0"
+chrono ="*"

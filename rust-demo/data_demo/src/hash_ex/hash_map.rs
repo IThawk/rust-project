@@ -12,10 +12,10 @@ pub fn hash_main() {
 
     let c = b.clone();
     let map1 = get_map_usr(c, String::from("people1"));
-    println!("{:?}", map1);
+    info!("{:?}", map1);
     let d = b.clone();
     let map2 = get_map_usr(d, String::from("people"));
-    println!("{:?}", map2);
+    info!("{:?}", map2);
 
     map_iter(map2);
 }
@@ -28,7 +28,7 @@ pub struct User {
 
 pub fn map_iter(map: HashMap<String, User>) {
     for (key, value) in map.iter() {
-        println!("key:{:?},value:{:?}",key,value)
+        info!("key:{:?},value:{:?}",key,value)
     }
 }
 

@@ -2,13 +2,13 @@ use std::sync::{Arc,Mutex};
 
 pub fn arc_main(){
     let a = Arc::new(2);
-    println!("{:?}",a.clone());
+    info!("{:?}",a.clone());
     let uer1 = User{
        name : String::from("lili"),
         id :12
     };
     let b = Arc::new(uer1);
-    println!("{:?}",b.clone());
+    info!("{:?}",b.clone());
     let c = Arc::new(User{
         name:String::from("xiaohong"),
         id:13
@@ -25,7 +25,7 @@ pub fn arc_main(){
     f = Arc::new(user2);
     let g = Arc::new( Mutex::new(f));
 
-    println!("f:{:?}",g.clone().lock().unwrap())
+    info!("f:{:?}",g.clone().lock().unwrap())
 }
 #[derive(Debug)]
 struct User{
