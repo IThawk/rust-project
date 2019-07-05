@@ -3,7 +3,7 @@ use arrayvec::ArrayString;
 #[derive(Debug,Ord, PartialOrd, Eq, PartialEq)]
 struct User{
     name:String,
-    id :ArrayString<[u8; 16]>
+    id :ArrayString<[u8; 63]>
 
 }
 pub fn array_string_main(){
@@ -31,8 +31,8 @@ fn test(){
 
 }
 
-fn init_arrays()->Vec<ArrayString<[u8; 16]>>{
-    let mut a:Vec<ArrayString<[u8; 16]>> = Vec::new();
+fn init_arrays()->Vec<ArrayString<[u8; 63]>>{
+    let mut a:Vec<ArrayString<[u8; 63]>> = Vec::new();
     a.push(init_array("g1"));
     a.push(init_array("h2"));
     a.push(init_array("q3"));
@@ -40,8 +40,8 @@ fn init_arrays()->Vec<ArrayString<[u8; 16]>>{
     a
 }
 
-fn init_array(value: &str)->ArrayString<[u8; 16]>{
-    let mut a:ArrayString<[u8; 16]> = ArrayString::new();
+fn init_array(value: &str)->ArrayString<[u8; 63]>{
+    let mut a:ArrayString<[u8; 63]> = ArrayString::new();
     a.push_str(value);
     info!("{:?}",&a);
     a
