@@ -10,7 +10,7 @@ serde_json = "*"
 lru = "*"
 hyper = "*"
 redis = "0.10.0"
-arrayvec = "0.4"
+arrayvec = { version = "0.4", features = ["serde-1", "array-sizes-33-128"] }
 pretty_env_logger = "*"
 log = "*"
 env_logger = "0.6.0"
