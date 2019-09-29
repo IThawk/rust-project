@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::string::String;
 
 pub fn hash_main() {
     let mut a = HashMap::new();
