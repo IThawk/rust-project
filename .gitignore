@@ -2,4 +2,4 @@
 /rust-demo/hello_world/*.lock
 /rust-demo/data_demo/target
 /rust-demo/http_demo/target
-/rust-demo/http_demo/*
+/rust-demo/http_demo/*.lock
