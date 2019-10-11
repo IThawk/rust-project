@@ -3,3 +3,7 @@
 /rust-demo/data_demo/target
 /rust-demo/http_demo/target
 /rust-demo/http_demo/*.lock
+/rust-data-struct/target
+/rust-data-struct/.idea
+/rust-data-struct/*.lock
+/rust-demo/http_demo/.idea
