@@ -33,7 +33,8 @@ fn run_client() -> io::Result<()> {
         Some(ref url) => Uri::from_str(url).map_err(|e| error(format!("{}", e)))?,
         None => {
             println!("Usage: client <url> <ca_store>");
-            return Ok(());
+//            return Ok(());
+            Uri::from_str("https://localhost:1337").unwrap()
         }
     };
 
@@ -45,7 +46,14 @@ fn run_client() -> io::Result<()> {
             let rd = io::BufReader::new(f);
             Some(rd)
         }
-        None => None,
+        None => {
+
+            let ca_path = "F:\\workspace\\language\\rust\\rust-project\\rust-demo\\http_demo\\config\\sample.pem";
+            let f = fs::File::open(ca_path)
+                .map_err(|e| error(format!("failed to open {}: {}", ca_path, e)))?;
+            let rd = io::BufReader::new(f);
+            Some(rd)
+        },
     };
 
     // Prepare the HTTPS connector.
