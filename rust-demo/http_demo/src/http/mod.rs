@@ -1,2 +1,2 @@
 mod client;
-pub use client::http_client_main;
+pub use self::client::http_client_main;

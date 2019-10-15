@@ -20,7 +20,7 @@ use std::option::Option::Some;
 use std::result::Result::Ok;
 
 
-pub fn https_client_main() {
+pub fn reqwest_demo2_main() {
     // Send GET request and inspect result, with proper error handling.
     if let Err(e) = run_client() {
         eprintln!("FAILED: {}", e);
