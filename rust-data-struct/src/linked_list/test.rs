@@ -1,4 +1,4 @@
-use super::single_queue::{SingleQueue};
+use super::single_lienked_list::{SingleQueue};
 use std::string::String;
 
 #[test]

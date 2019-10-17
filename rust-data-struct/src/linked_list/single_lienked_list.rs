@@ -9,7 +9,7 @@ use std::fmt::Debug;
 static DEFAULT_SIZE: usize = 8;
 
 #[derive(Debug)]
-pub struct SingleQueue<T> {
+pub struct SingleLinedList<T> {
     pub data: Vec<T>,
     pub font: i32,
     pub rear: i32,
@@ -87,4 +87,8 @@ impl<T> Default for SingleQueue<T> where T: Clone + Default + Debug {
             size: 8,
         }
     }
+}
+struct Node<T>{
+    pub data:T,
+    pub next:Box<Option<Node<T>>>
 }
