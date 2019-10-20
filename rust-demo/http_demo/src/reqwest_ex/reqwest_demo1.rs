@@ -13,14 +13,15 @@ extern crate reqwest;
 extern crate tempdir;
 use futures::{Future, Stream};
 use self::hyper::{client, Uri};
-use std::str::FromStr;
-use std::{env, fs, io};
-use std::result::Result::Err;
-use std::string::String;
-use std::option::Option::{Some,None};
-use std::result::Result::Ok;
-use std::result::Result;
-use std::io::Write;
+use std::*;
+//use std::str::FromStr;
+//use std::{env, fs, io};
+//use std::result::Result::Err;
+//use std::string::String;
+//use std::option::Option::{Some,None};
+//use std::result::Result::Ok;
+//use std::result::Result;
+//use std::io::Write;
 use tempdir::TempDir;
 
 pub fn reqwest_demo1_main() {
@@ -43,9 +44,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 segments.last()})
             .and_then(|name| if name.is_empty() { None } else { Some(name) })
             .unwrap_or("tmp.bin");
-
+s
 //        println!("file to download: '{}'", fname);
-        let fnames = format!("{}/{}","D:/",fname);
+        let  fnames:String ;
+        #[cfg(target_os="window")]{
+            fnames = format!("{}/{}","D:/",fname);
+        }
+        #[cfg(not (target_os="windows"))]
+        {
+            fnames = format!("{}/{}","/root",fname);
+         }
         println!("will be located under: '{:?}'", fnames);
 
         //这个地方就会报错(如果类型不对的话,就会报错)
