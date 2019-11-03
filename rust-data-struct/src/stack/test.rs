@@ -5,4 +5,6 @@ use std::string::String;
 fn test_new() {
 
    let a:Stack<String> = Stack::new(3);
+   a.add(String::new());
+
 }
