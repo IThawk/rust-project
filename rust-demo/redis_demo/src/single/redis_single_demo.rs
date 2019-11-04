@@ -1,10 +1,9 @@
 use redis::{Commands, Connection, RedisResult};
 
 pub fn single_redis_main() {
-    if let Ok(mut conn) = get_connection("redis://192.168.101.13:16379") {
+    if let Ok(mut conn) = get_connection("redis://:123456@192.168.101.13:16379") {
         set_string_value("test1", "test1", &mut conn);
     };
-    println!("ddddd");
 }
 
 
