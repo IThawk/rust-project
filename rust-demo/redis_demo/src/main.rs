@@ -8,4 +8,5 @@ use single::*;
 fn main() {
     single_redis_main();
     println!("Hello, world!");
+    pool_redis_main();
 }
