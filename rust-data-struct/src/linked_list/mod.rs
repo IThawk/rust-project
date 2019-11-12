@@ -1,3 +1,3 @@
-mod single_lienked_list;
+mod single_linked_list;
 mod test;
-pub  use self::single_lienked_list::SingleLinedList;
+pub  use self::single_linked_list::cargo ;

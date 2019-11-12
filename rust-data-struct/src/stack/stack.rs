@@ -11,8 +11,7 @@ static DEFAULT_SIZE: usize = 8;
 #[derive(Debug)]
 pub struct Stack<T> {
     pub data: Vec<T>,
-    pub font: i32,
-    pub rear: i32,
+    pub pointer: i32,
     pub size: usize,
 }
 
@@ -22,8 +21,7 @@ impl<T> Stack<T>
     pub fn new(size: usize) -> Stack<T> {
         Stack {
             data: vec![T::default(); size],
-            font: -1,
-            rear: -1,
+            pointer: -1,
             size,
         }
     }
@@ -32,11 +30,9 @@ impl<T> Stack<T>
         if self.is_full() {
             false
         } else {
-            if self.font == -1 {
-                self.size += 1;
-            }
-            self.rear += 1;
-            let end = self.rear as usize;
+
+            self.pointer += 1;
+            let end = self.pointer as usize;
             self.data[end] = param;
             true
         }
@@ -47,7 +43,7 @@ impl<T> Stack<T>
     }
 
     pub fn is_empty(&self) -> bool {
-        if self.font == -1 || self.font > self.rear {
+        if self.font == -1 {
             true
         } else {
             false
@@ -56,7 +52,7 @@ impl<T> Stack<T>
 
 
     pub fn is_full(&self) -> bool {
-        let size = self.rear + 1;
+        let size = self.pointer + 1;
         let size = size as usize;
         if size == self.size {
             true
@@ -65,14 +61,14 @@ impl<T> Stack<T>
         }
     }
 
-    pub fn poll(&mut self) -> Option<T> {
+    pub fn pop(&mut self) -> Option<T> {
         if self.is_empty() {
             None
         } else {
-            let font = self.font as usize;
-            let a = self.data[font].clone();
-            self.data[font] = T::default();
-            self.font += 1;
+            let pointer = self.pointer as usize;
+            let a = self.data[pointer].clone();
+            self.data[pointer] = T::default();
+            self.pointer -= 1;
             Some(a)
         }
     }
@@ -82,8 +78,7 @@ impl<T> Default for Stack<T> where T: Clone + Default + Debug {
     fn default() -> Stack<T> {
         Stack {
             data: vec![T::default(); DEFAULT_SIZE],
-            font: -1,
-            rear: -1,
+            pointer: -1,
             size: 8,
         }
     }
