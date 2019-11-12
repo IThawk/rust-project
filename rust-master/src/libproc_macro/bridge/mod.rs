@@ -148,6 +148,7 @@ macro_rules! with_api {
                 fn debug($self: $S::Span) -> String;
                 fn def_site() -> $S::Span;
                 fn call_site() -> $S::Span;
+                fn mixed_site() -> $S::Span;
                 fn source_file($self: $S::Span) -> $S::SourceFile;
                 fn parent($self: $S::Span) -> Option<$S::Span>;
                 fn source($self: $S::Span) -> $S::Span;
@@ -155,6 +156,7 @@ macro_rules! with_api {
                 fn end($self: $S::Span) -> LineColumn;
                 fn join($self: $S::Span, other: $S::Span) -> Option<$S::Span>;
                 fn resolved_at($self: $S::Span, at: $S::Span) -> $S::Span;
+                fn source_text($self: $S::Span) -> Option<String>;
             },
         }
     };

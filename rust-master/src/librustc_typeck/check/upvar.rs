@@ -41,11 +41,12 @@ use rustc::hir::def_id::LocalDefId;
 use rustc::hir::intravisit::{self, NestedVisitorMap, Visitor};
 use rustc::infer::UpvarRegion;
 use rustc::ty::{self, Ty, TyCtxt, UpvarSubsts};
+use rustc_data_structures::fx::FxIndexMap;
 use syntax::ast;
 use syntax_pos::Span;
 
-impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
-    pub fn closure_analyze(&self, body: &'gcx hir::Body) {
+impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
+    pub fn closure_analyze(&self, body: &'tcx hir::Body) {
         InferBorrowKindVisitor { fcx: self }.visit_body(body);
 
         // it's our job to process these.
@@ -53,17 +54,17 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
     }
 }
 
-struct InferBorrowKindVisitor<'a, 'gcx: 'a + 'tcx, 'tcx: 'a> {
-    fcx: &'a FnCtxt<'a, 'gcx, 'tcx>,
+struct InferBorrowKindVisitor<'a, 'tcx> {
+    fcx: &'a FnCtxt<'a, 'tcx>,
 }
 
-impl<'a, 'gcx, 'tcx> Visitor<'gcx> for InferBorrowKindVisitor<'a, 'gcx, 'tcx> {
-    fn nested_visit_map<'this>(&'this mut self) -> NestedVisitorMap<'this, 'gcx> {
+impl<'a, 'tcx> Visitor<'tcx> for InferBorrowKindVisitor<'a, 'tcx> {
+    fn nested_visit_map<'this>(&'this mut self) -> NestedVisitorMap<'this, 'tcx> {
         NestedVisitorMap::None
     }
 
-    fn visit_expr(&mut self, expr: &'gcx hir::Expr) {
-        if let hir::ExprKind::Closure(cc, _, body_id, _, _) = expr.node {
+    fn visit_expr(&mut self, expr: &'tcx hir::Expr) {
+        if let hir::ExprKind::Closure(cc, _, body_id, _, _) = expr.kind {
             let body = self.fcx.tcx.hir().body(body_id);
             self.visit_body(body);
             self.fcx
@@ -74,7 +75,7 @@ impl<'a, 'gcx, 'tcx> Visitor<'gcx> for InferBorrowKindVisitor<'a, 'gcx, 'tcx> {
     }
 }
 
-impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
+impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
     fn analyze_closure(
         &self,
         closure_hir_id: hir::HirId,
@@ -94,8 +95,11 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
 
         // Extract the type of the closure.
         let ty = self.node_ty(closure_hir_id);
-        let (closure_def_id, substs) = match ty.sty {
-            ty::Closure(def_id, substs) => (def_id, UpvarSubsts::Closure(substs)),
+        let (closure_def_id, substs) = match ty.kind {
+            ty::Closure(def_id, substs) => (
+                def_id,
+                UpvarSubsts::Closure(substs)
+            ),
             ty::Generator(def_id, substs, _) => (def_id, UpvarSubsts::Generator(substs)),
             ty::Error => {
                 // #51714: skip analysis when we have already encountered type errors
@@ -121,28 +125,29 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
             None
         };
 
-        self.tcx.with_freevars(closure_hir_id, |freevars| {
-            let mut freevar_list: Vec<ty::UpvarId> = Vec::with_capacity(freevars.len());
-            for freevar in freevars {
+        if let Some(upvars) = self.tcx.upvars(closure_def_id) {
+            let mut upvar_list: FxIndexMap<hir::HirId, ty::UpvarId> =
+                FxIndexMap::with_capacity_and_hasher(upvars.len(), Default::default());
+            for (&var_hir_id, _) in upvars.iter() {
                 let upvar_id = ty::UpvarId {
                     var_path: ty::UpvarPath {
-                        hir_id: self.tcx.hir().node_to_hir_id(freevar.var_id()),
+                        hir_id: var_hir_id,
                     },
                     closure_expr_id: LocalDefId::from_def_id(closure_def_id),
                 };
                 debug!("seed upvar_id {:?}", upvar_id);
                 // Adding the upvar Id to the list of Upvars, which will be added
                 // to the map for the closure at the end of the for loop.
-                freevar_list.push(upvar_id);
+                upvar_list.insert(var_hir_id, upvar_id);
 
                 let capture_kind = match capture_clause {
                     hir::CaptureByValue => ty::UpvarCapture::ByValue,
                     hir::CaptureByRef => {
                         let origin = UpvarRegion(upvar_id, span);
-                        let freevar_region = self.next_region_var(origin);
+                        let upvar_region = self.next_region_var(origin);
                         let upvar_borrow = ty::UpvarBorrow {
                             kind: ty::ImmBorrow,
-                            region: freevar_region,
+                            region: upvar_region,
                         };
                         ty::UpvarCapture::ByRef(upvar_borrow)
                     }
@@ -153,18 +158,19 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
                     .upvar_capture_map
                     .insert(upvar_id, capture_kind);
             }
-            // Add the vector of freevars to the map keyed with the closure id.
+            // Add the vector of upvars to the map keyed with the closure id.
             // This gives us an easier access to them without having to call
-            // with_freevars again..
-            if !freevar_list.is_empty() {
+            // tcx.upvars again..
+            if !upvar_list.is_empty() {
                 self.tables
                     .borrow_mut()
                     .upvar_list
-                    .insert(closure_def_id, freevar_list);
+                    .insert(closure_def_id, upvar_list);
             }
-        });
+        }
 
         let body_owner_def_id = self.tcx.hir().body_owner_def_id(body.id());
+        assert_eq!(body_owner_def_id, closure_def_id);
         let region_scope_tree = &self.tcx.region_scope_tree(body_owner_def_id);
         let mut delegate = InferBorrowKind {
             fcx: self,
@@ -176,6 +182,7 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
         euv::ExprUseVisitor::with_infer(
             &mut delegate,
             &self.infcx,
+            body_owner_def_id,
             self.param_env,
             region_scope_tree,
             &self.tables.borrow(),
@@ -186,7 +193,8 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
             // Unify the (as yet unbound) type variable in the closure
             // substs with the kind we inferred.
             let inferred_kind = delegate.current_closure_kind;
-            let closure_kind_ty = closure_substs.closure_kind_ty(closure_def_id, self.tcx);
+            let closure_kind_ty = closure_substs
+                .as_closure().kind_ty(closure_def_id, self.tcx);
             self.demand_eqtype(span, inferred_kind.to_ty(self.tcx), closure_kind_ty);
 
             // If we have an origin, store it.
@@ -244,44 +252,42 @@ impl<'a, 'gcx, 'tcx> FnCtxt<'a, 'gcx, 'tcx> {
         // This may change if abstract return types of some sort are
         // implemented.
         let tcx = self.tcx;
-        let closure_def_index = tcx.hir().local_def_id_from_hir_id(closure_id);
+        let closure_def_id = tcx.hir().local_def_id(closure_id);
 
-        tcx.with_freevars(closure_id, |freevars| {
-            freevars
+        tcx.upvars(closure_def_id).iter().flat_map(|upvars| {
+            upvars
                 .iter()
-                .map(|freevar| {
-                    let var_node_id = freevar.var_id();
-                    let var_hir_id = tcx.hir().node_to_hir_id(var_node_id);
-                    let freevar_ty = self.node_ty(var_hir_id);
+                .map(|(&var_hir_id, _)| {
+                    let upvar_ty = self.node_ty(var_hir_id);
                     let upvar_id = ty::UpvarId {
                         var_path: ty::UpvarPath { hir_id: var_hir_id },
-                        closure_expr_id: LocalDefId::from_def_id(closure_def_index),
+                        closure_expr_id: LocalDefId::from_def_id(closure_def_id),
                     };
                     let capture = self.tables.borrow().upvar_capture(upvar_id);
 
                     debug!(
-                        "var_id={:?} freevar_ty={:?} capture={:?}",
-                        var_node_id, freevar_ty, capture
+                        "var_id={:?} upvar_ty={:?} capture={:?}",
+                        var_hir_id, upvar_ty, capture
                     );
 
                     match capture {
-                        ty::UpvarCapture::ByValue => freevar_ty,
+                        ty::UpvarCapture::ByValue => upvar_ty,
                         ty::UpvarCapture::ByRef(borrow) => tcx.mk_ref(
                             borrow.region,
                             ty::TypeAndMut {
-                                ty: freevar_ty,
+                                ty: upvar_ty,
                                 mutbl: borrow.kind.to_mutbl_lossy(),
                             },
                         ),
                     }
                 })
-                .collect()
         })
+            .collect()
     }
 }
 
-struct InferBorrowKind<'a, 'gcx: 'a + 'tcx, 'tcx: 'a> {
-    fcx: &'a FnCtxt<'a, 'gcx, 'tcx>,
+struct InferBorrowKind<'a, 'tcx> {
+    fcx: &'a FnCtxt<'a, 'tcx>,
 
     // The def-id of the closure whose kind and upvar accesses are being inferred.
     closure_def_id: DefId,
@@ -303,7 +309,7 @@ struct InferBorrowKind<'a, 'gcx: 'a + 'tcx, 'tcx: 'a> {
     adjust_upvar_captures: ty::UpvarCaptureMap<'tcx>,
 }
 
-impl<'a, 'gcx, 'tcx> InferBorrowKind<'a, 'gcx, 'tcx> {
+impl<'a, 'tcx> InferBorrowKind<'a, 'tcx> {
     fn adjust_upvar_borrow_kind_for_consume(
         &mut self,
         cmt: &mc::cmt_<'tcx>,
@@ -319,7 +325,7 @@ impl<'a, 'gcx, 'tcx> InferBorrowKind<'a, 'gcx, 'tcx> {
             euv::Copy => {
                 return;
             }
-            euv::Move(_) => {}
+            euv::Move => {}
         }
 
         let tcx = self.fcx.tcx;
@@ -406,8 +412,8 @@ impl<'a, 'gcx, 'tcx> InferBorrowKind<'a, 'gcx, 'tcx> {
 
             Categorization::Deref(_, mc::UnsafePtr(..))
             | Categorization::StaticItem
-            | Categorization::ThreadLocal(..)
-            | Categorization::Rvalue(..)
+            | Categorization::ThreadLocal
+            | Categorization::Rvalue
             | Categorization::Local(_)
             | Categorization::Upvar(..) => {
                 return;
@@ -437,8 +443,8 @@ impl<'a, 'gcx, 'tcx> InferBorrowKind<'a, 'gcx, 'tcx> {
 
             Categorization::Deref(_, mc::UnsafePtr(..))
             | Categorization::StaticItem
-            | Categorization::ThreadLocal(..)
-            | Categorization::Rvalue(..)
+            | Categorization::ThreadLocal
+            | Categorization::Rvalue
             | Categorization::Local(_)
             | Categorization::Upvar(..) => {}
         }
@@ -579,49 +585,14 @@ impl<'a, 'gcx, 'tcx> InferBorrowKind<'a, 'gcx, 'tcx> {
     }
 }
 
-impl<'a, 'gcx, 'tcx> euv::Delegate<'tcx> for InferBorrowKind<'a, 'gcx, 'tcx> {
-    fn consume(
-        &mut self,
-        _consume_id: hir::HirId,
-        _consume_span: Span,
-        cmt: &mc::cmt_<'tcx>,
-        mode: euv::ConsumeMode,
-    ) {
+impl<'a, 'tcx> euv::Delegate<'tcx> for InferBorrowKind<'a, 'tcx> {
+    fn consume(&mut self, cmt: &mc::cmt_<'tcx>,mode: euv::ConsumeMode) {
         debug!("consume(cmt={:?},mode={:?})", cmt, mode);
         self.adjust_upvar_borrow_kind_for_consume(cmt, mode);
     }
 
-    fn matched_pat(
-        &mut self,
-        _matched_pat: &hir::Pat,
-        _cmt: &mc::cmt_<'tcx>,
-        _mode: euv::MatchMode,
-    ) {
-    }
-
-    fn consume_pat(
-        &mut self,
-        _consume_pat: &hir::Pat,
-        cmt: &mc::cmt_<'tcx>,
-        mode: euv::ConsumeMode,
-    ) {
-        debug!("consume_pat(cmt={:?},mode={:?})", cmt, mode);
-        self.adjust_upvar_borrow_kind_for_consume(cmt, mode);
-    }
-
-    fn borrow(
-        &mut self,
-        borrow_id: hir::HirId,
-        _borrow_span: Span,
-        cmt: &mc::cmt_<'tcx>,
-        _loan_region: ty::Region<'tcx>,
-        bk: ty::BorrowKind,
-        _loan_cause: euv::LoanCause,
-    ) {
-        debug!(
-            "borrow(borrow_id={}, cmt={:?}, bk={:?})",
-            borrow_id, cmt, bk
-        );
+    fn borrow(&mut self, cmt: &mc::cmt_<'tcx>, bk: ty::BorrowKind) {
+        debug!("borrow(cmt={:?}, bk={:?})", cmt, bk);
 
         match bk {
             ty::ImmBorrow => {}
@@ -634,21 +605,13 @@ impl<'a, 'gcx, 'tcx> euv::Delegate<'tcx> for InferBorrowKind<'a, 'gcx, 'tcx> {
         }
     }
 
-    fn decl_without_init(&mut self, _id: hir::HirId, _span: Span) {}
-
-    fn mutate(
-        &mut self,
-        _assignment_id: hir::HirId,
-        _assignment_span: Span,
-        assignee_cmt: &mc::cmt_<'tcx>,
-        _mode: euv::MutateMode,
-    ) {
+    fn mutate(&mut self, assignee_cmt: &mc::cmt_<'tcx>) {
         debug!("mutate(assignee_cmt={:?})", assignee_cmt);
 
         self.adjust_upvar_borrow_kind_for_mut(assignee_cmt);
     }
 }
 
-fn var_name(tcx: TyCtxt<'_, '_, '_>, var_hir_id: hir::HirId) -> ast::Name {
-    tcx.hir().name_by_hir_id(var_hir_id)
+fn var_name(tcx: TyCtxt<'_>, var_hir_id: hir::HirId) -> ast::Name {
+    tcx.hir().name(var_hir_id)
 }

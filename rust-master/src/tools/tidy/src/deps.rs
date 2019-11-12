@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+use serde::Deserialize;
 use serde_json;
 
 const LICENSES: &[&str] = &[
@@ -13,6 +14,8 @@ const LICENSES: &[&str] = &[
     "Apache-2.0/MIT",
     "Apache-2.0 / MIT",
     "MIT OR Apache-2.0",
+    "Apache-2.0 OR MIT",
+    "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT", // wasi license
     "MIT",
     "Unlicense/MIT",
     "Unlicense OR MIT",
@@ -32,6 +35,8 @@ const EXCEPTIONS: &[&str] = &[
     "is-match",           // MPL-2.0, mdbook
     "cssparser",          // MPL-2.0, rustdoc
     "smallvec",           // MPL-2.0, rustdoc
+    "rdrand",             // ISC, mdbook, rustfmt
+    "fuchsia-cprng",      // BSD-3-Clause, mdbook, rustfmt
     "fuchsia-zircon-sys", // BSD-3-Clause, rustdoc, rustc, cargo
     "fuchsia-zircon",     // BSD-3-Clause, rustdoc, rustc, cargo (jobserver & tempdir)
     "cssparser-macros",   // MPL-2.0, rustdoc
@@ -44,8 +49,12 @@ const EXCEPTIONS: &[&str] = &[
     "bytesize",           // Apache-2.0, cargo
     "im-rc",              // MPL-2.0+, cargo
     "adler32",            // BSD-3-Clause AND Zlib, cargo dep that isn't used
-    "fortanix-sgx-abi",   // MPL-2.0+, libstd but only for `sgx` target
     "constant_time_eq",   // CC0-1.0, rustfmt
+    "utf8parse",          // Apache-2.0 OR MIT, cargo via strip-ansi-escapes
+    "vte",                // Apache-2.0 OR MIT, cargo via strip-ansi-escapes
+    "sized-chunks",       // MPL-2.0+, cargo via im-rc
+    // FIXME: this dependency violates the documentation comment above:
+    "fortanix-sgx-abi",   // MPL-2.0+, libstd but only for `sgx` target
 ];
 
 /// Which crates to check against the whitelist?
@@ -58,13 +67,17 @@ const WHITELIST_CRATES: &[CrateVersion<'_>] = &[
 const WHITELIST: &[Crate<'_>] = &[
     Crate("adler32"),
     Crate("aho-corasick"),
+    Crate("annotate-snippets"),
+    Crate("ansi_term"),
     Crate("arrayvec"),
     Crate("atty"),
+    Crate("autocfg"),
     Crate("backtrace"),
     Crate("backtrace-sys"),
     Crate("bitflags"),
     Crate("build_const"),
     Crate("byteorder"),
+    Crate("c2-chacha"),
     Crate("cc"),
     Crate("cfg-if"),
     Crate("chalk-engine"),
@@ -76,17 +89,24 @@ const WHITELIST: &[Crate<'_>] = &[
     Crate("crc32fast"),
     Crate("crossbeam-deque"),
     Crate("crossbeam-epoch"),
+    Crate("crossbeam-queue"),
     Crate("crossbeam-utils"),
     Crate("datafrog"),
+    Crate("dlmalloc"),
     Crate("either"),
     Crate("ena"),
     Crate("env_logger"),
     Crate("filetime"),
     Crate("flate2"),
+    Crate("fortanix-sgx-abi"),
     Crate("fuchsia-zircon"),
     Crate("fuchsia-zircon-sys"),
     Crate("getopts"),
+    Crate("getrandom"),
+    Crate("hashbrown"),
     Crate("humantime"),
+    Crate("indexmap"),
+    Crate("itertools"),
     Crate("jobserver"),
     Crate("kernel32-sys"),
     Crate("lazy_static"),
@@ -95,6 +115,7 @@ const WHITELIST: &[Crate<'_>] = &[
     Crate("lock_api"),
     Crate("log"),
     Crate("log_settings"),
+    Crate("measureme"),
     Crate("memchr"),
     Crate("memmap"),
     Crate("memoffset"),
@@ -108,6 +129,7 @@ const WHITELIST: &[Crate<'_>] = &[
     Crate("parking_lot_core"),
     Crate("pkg-config"),
     Crate("polonius-engine"),
+    Crate("ppv-lite86"),
     Crate("proc-macro2"),
     Crate("quick-error"),
     Crate("quote"),
@@ -142,6 +164,7 @@ const WHITELIST: &[Crate<'_>] = &[
     Crate("termcolor"),
     Crate("terminon"),
     Crate("termion"),
+    Crate("term_size"),
     Crate("thread_local"),
     Crate("ucd-util"),
     Crate("unicode-width"),
@@ -151,6 +174,7 @@ const WHITELIST: &[Crate<'_>] = &[
     Crate("vcpkg"),
     Crate("version_check"),
     Crate("void"),
+    Crate("wasi"),
     Crate("winapi"),
     Crate("winapi-build"),
     Crate("winapi-i686-pc-windows-gnu"),
@@ -238,7 +262,7 @@ pub fn check(path: &Path, bad: &mut bool) {
         }
 
         let toml = dir.path().join("Cargo.toml");
-        *bad = *bad || !check_license(&toml);
+        *bad = !check_license(&toml) || *bad;
     }
     assert!(saw_dir, "no vendored source");
 }

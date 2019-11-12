@@ -2,14 +2,13 @@ use std::ffi::CString;
 
 use crate::attributes;
 use libc::c_uint;
-use rustc::middle::allocator::AllocatorKind;
 use rustc::ty::TyCtxt;
-use rustc_allocator::{ALLOCATOR_METHODS, AllocatorTy};
+use syntax_expand::allocator::{AllocatorKind, AllocatorTy, ALLOCATOR_METHODS};
 
 use crate::ModuleLlvm;
 use crate::llvm::{self, False, True};
 
-pub(crate) unsafe fn codegen(tcx: TyCtxt<'_, '_, '_>, mods: &mut ModuleLlvm, kind: AllocatorKind) {
+pub(crate) unsafe fn codegen(tcx: TyCtxt<'_>, mods: &mut ModuleLlvm, kind: AllocatorKind) {
     let llcx = &*mods.llcx;
     let llmod = mods.llmod();
     let usize = match &tcx.sess.target.target.target_pointer_width[..] {
@@ -69,7 +68,7 @@ pub(crate) unsafe fn codegen(tcx: TyCtxt<'_, '_, '_>, mods: &mut ModuleLlvm, kin
 
         let llbb = llvm::LLVMAppendBasicBlockInContext(llcx,
                                                        llfn,
-                                                       "entry\0".as_ptr() as *const _);
+                                                       "entry\0".as_ptr().cast());
 
         let llbuilder = llvm::LLVMCreateBuilderInContext(llcx);
         llvm::LLVMPositionBuilderAtEnd(llbuilder, llbb);
@@ -81,7 +80,7 @@ pub(crate) unsafe fn codegen(tcx: TyCtxt<'_, '_, '_>, mods: &mut ModuleLlvm, kin
                                           args.as_ptr(),
                                           args.len() as c_uint,
                                           None,
-                                          "\0".as_ptr() as *const _);
+                                          "\0".as_ptr().cast());
         llvm::LLVMSetTailCall(ret, True);
         if output.is_some() {
             llvm::LLVMBuildRet(llbuilder, ret);

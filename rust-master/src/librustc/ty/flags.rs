@@ -1,5 +1,5 @@
-use crate::ty::subst::{SubstsRef, UnpackedKind};
-use crate::ty::{self, Ty, TypeFlags, TypeFoldable, InferConst};
+use crate::ty::subst::{SubstsRef, GenericArgKind};
+use crate::ty::{self, Ty, TypeFlags, InferConst};
 use crate::mir::interpret::ConstValue;
 
 #[derive(Debug)]
@@ -18,10 +18,17 @@ impl FlagComputation {
         }
     }
 
-    pub fn for_sty(st: &ty::TyKind<'_>) -> FlagComputation {
+    #[allow(rustc::usage_of_ty_tykind)]
+    pub fn for_kind(kind: &ty::TyKind<'_>) -> FlagComputation {
         let mut result = FlagComputation::new();
-        result.add_sty(st);
+        result.add_kind(kind);
         result
+    }
+
+    pub fn for_const(c: &ty::Const<'_>) -> TypeFlags {
+        let mut result = FlagComputation::new();
+        result.add_const(c);
+        result.flags
     }
 
     fn add_flags(&mut self, flags: TypeFlags) {
@@ -55,8 +62,9 @@ impl FlagComputation {
         } // otherwise, this binder captures nothing
     }
 
-    fn add_sty(&mut self, st: &ty::TyKind<'_>) {
-        match st {
+    #[allow(rustc::usage_of_ty_tykind)]
+    fn add_kind(&mut self, kind: &ty::TyKind<'_>) {
+        match kind {
             &ty::Bool |
             &ty::Char |
             &ty::Int(_) |
@@ -78,19 +86,15 @@ impl FlagComputation {
                 self.add_flags(TypeFlags::HAS_TY_ERR)
             }
 
-            &ty::Param(ref p) => {
+            &ty::Param(_) => {
                 self.add_flags(TypeFlags::HAS_FREE_LOCAL_NAMES);
-                if p.is_self() {
-                    self.add_flags(TypeFlags::HAS_SELF);
-                } else {
-                    self.add_flags(TypeFlags::HAS_PARAMS);
-                }
+                self.add_flags(TypeFlags::HAS_PARAMS);
             }
 
             &ty::Generator(_, ref substs, _) => {
                 self.add_flags(TypeFlags::HAS_TY_CLOSURE);
                 self.add_flags(TypeFlags::HAS_FREE_LOCAL_NAMES);
-                self.add_substs(&substs.substs);
+                self.add_substs(substs);
             }
 
             &ty::GeneratorWitness(ref ts) => {
@@ -102,7 +106,7 @@ impl FlagComputation {
             &ty::Closure(_, ref substs) => {
                 self.add_flags(TypeFlags::HAS_TY_CLOSURE);
                 self.add_flags(TypeFlags::HAS_FREE_LOCAL_NAMES);
-                self.add_substs(&substs.substs);
+                self.add_substs(substs);
             }
 
             &ty::Bound(debruijn, _) => {
@@ -135,11 +139,6 @@ impl FlagComputation {
             }
 
             &ty::Projection(ref data) => {
-                // currently we can't normalize projections that
-                // include bound regions, so track those separately.
-                if !data.has_escaping_bound_vars() {
-                    self.add_flags(TypeFlags::HAS_NORMALIZABLE_PROJECTION);
-                }
                 self.add_flags(TypeFlags::HAS_PROJECTION);
                 self.add_projection_ty(data);
             }
@@ -173,10 +172,7 @@ impl FlagComputation {
 
             &ty::Array(tt, len) => {
                 self.add_ty(tt);
-                if let ty::LazyConst::Unevaluated(_, substs) = len {
-                    self.add_flags(TypeFlags::HAS_PROJECTION);
-                    self.add_substs(substs);
-                }
+                self.add_const(len);
             }
 
             &ty::Slice(tt) => {
@@ -192,8 +188,8 @@ impl FlagComputation {
                 self.add_ty(ty);
             }
 
-            &ty::Tuple(ref ts) => {
-                self.add_tys(&ts[..]);
+            &ty::Tuple(ref substs) => {
+                self.add_substs(substs);
             }
 
             &ty::FnDef(_, substs) => {
@@ -233,19 +229,31 @@ impl FlagComputation {
         }
     }
 
-    fn add_const(&mut self, c: &ty::LazyConst<'_>) {
-        match c {
-            ty::LazyConst::Unevaluated(_, substs) => self.add_substs(substs),
-            // Only done to add the binder for the type. The type flags are
-            // included in `Const::type_flags`.
-            ty::LazyConst::Evaluated(ty::Const { ty, val }) => {
-                self.add_ty(ty);
-                if let ConstValue::Infer(InferConst::Canonical(debruijn, _)) = val {
-                    self.add_binder(*debruijn)
+    fn add_const(&mut self, c: &ty::Const<'_>) {
+        self.add_ty(c.ty);
+        match c.val {
+            ConstValue::Unevaluated(_, substs) => {
+                self.add_substs(substs);
+                self.add_flags(TypeFlags::HAS_PROJECTION);
+            },
+            ConstValue::Infer(infer) => {
+                self.add_flags(TypeFlags::HAS_FREE_LOCAL_NAMES | TypeFlags::HAS_CT_INFER);
+                match infer {
+                    InferConst::Fresh(_) => {}
+                    InferConst::Canonical(debruijn, _) => self.add_binder(debruijn),
+                    InferConst::Var(_) => self.add_flags(TypeFlags::KEEP_IN_LOCAL_TCX),
                 }
             }
+            ConstValue::Param(_) => {
+                self.add_flags(TypeFlags::HAS_FREE_LOCAL_NAMES | TypeFlags::HAS_PARAMS);
+            }
+            ConstValue::Placeholder(_) => {
+                self.add_flags(TypeFlags::HAS_FREE_REGIONS | TypeFlags::HAS_CT_PLACEHOLDER);
+            }
+            ConstValue::Scalar(_) => { }
+            ConstValue::Slice { data: _, start: _, end: _ } => { }
+            ConstValue::ByRef { alloc: _, offset: _ } => { }
         }
-        self.add_flags(c.type_flags());
     }
 
     fn add_existential_projection(&mut self, projection: &ty::ExistentialProjection<'_>) {
@@ -260,9 +268,9 @@ impl FlagComputation {
     fn add_substs(&mut self, substs: SubstsRef<'_>) {
         for kind in substs {
             match kind.unpack() {
-                UnpackedKind::Type(ty) => self.add_ty(ty),
-                UnpackedKind::Lifetime(lt) => self.add_region(lt),
-                UnpackedKind::Const(ct) => self.add_const(ct),
+                GenericArgKind::Type(ty) => self.add_ty(ty),
+                GenericArgKind::Lifetime(lt) => self.add_region(lt),
+                GenericArgKind::Const(ct) => self.add_const(ct),
             }
         }
     }

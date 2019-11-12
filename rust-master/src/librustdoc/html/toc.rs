@@ -1,10 +1,7 @@
 //! Table-of-contents creation.
 
-use std::fmt;
-use std::string::String;
-
 /// A (recursive) table of contents
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Toc {
     /// The levels are strictly decreasing, i.e.
     ///
@@ -28,7 +25,7 @@ impl Toc {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct TocEntry {
     level: u32,
     sec_number: String,
@@ -119,7 +116,7 @@ impl TocBuilder {
     /// Push a level `level` heading into the appropriate place in the
     /// hierarchy, returning a string containing the section number in
     /// `<num>.<num>.<num>` format.
-    pub fn push<'a>(&'a mut self, level: u32, name: String, id: String) -> &'a str {
+    pub fn push(&mut self, level: u32, name: String, id: String) -> &str {
         assert!(level >= 1);
 
         // collapse all previous sections into their parents until we
@@ -165,108 +162,25 @@ impl TocBuilder {
     }
 }
 
-impl fmt::Debug for Toc {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self, f)
-    }
-}
-
-impl fmt::Display for Toc {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "<ul>")?;
+impl Toc {
+    fn print_inner(&self, v: &mut String) {
+        v.push_str("<ul>");
         for entry in &self.entries {
-            // recursively format this table of contents (the
-            // `{children}` is the key).
-            write!(fmt,
-                   "\n<li><a href=\"#{id}\">{num} {name}</a>{children}</li>",
+            // recursively format this table of contents
+            v.push_str(&format!("\n<li><a href=\"#{id}\">{num} {name}</a>",
                    id = entry.id,
-                   num = entry.sec_number, name = entry.name,
-                   children = entry.children)?
+                   num = entry.sec_number, name = entry.name));
+            entry.children.print_inner(&mut *v);
+            v.push_str("</li>");
         }
-        write!(fmt, "</ul>")
+        v.push_str("</ul>");
+    }
+    crate fn print(&self) -> String {
+        let mut v = String::new();
+        self.print_inner(&mut v);
+        v
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{TocBuilder, Toc, TocEntry};
-
-    #[test]
-    fn builder_smoke() {
-        let mut builder = TocBuilder::new();
-
-        // this is purposely not using a fancy macro like below so
-        // that we're sure that this is doing the correct thing, and
-        // there's been no macro mistake.
-        macro_rules! push {
-            ($level: expr, $name: expr) => {
-                assert_eq!(builder.push($level,
-                                        $name.to_string(),
-                                        "".to_string()),
-                           $name);
-            }
-        }
-        push!(2, "0.1");
-        push!(1, "1");
-        {
-            push!(2, "1.1");
-            {
-                push!(3, "1.1.1");
-                push!(3, "1.1.2");
-            }
-            push!(2, "1.2");
-            {
-                push!(3, "1.2.1");
-                push!(3, "1.2.2");
-            }
-        }
-        push!(1, "2");
-        push!(1, "3");
-        {
-            push!(4, "3.0.0.1");
-            {
-                push!(6, "3.0.0.1.0.1");
-            }
-            push!(4, "3.0.0.2");
-            push!(2, "3.1");
-            {
-                push!(4, "3.1.0.1");
-            }
-        }
-
-        macro_rules! toc {
-            ($(($level: expr, $name: expr, $(($sub: tt))* )),*) => {
-                Toc {
-                    entries: vec![
-                        $(
-                            TocEntry {
-                                level: $level,
-                                name: $name.to_string(),
-                                sec_number: $name.to_string(),
-                                id: "".to_string(),
-                                children: toc!($($sub),*)
-                            }
-                            ),*
-                        ]
-                }
-            }
-        }
-        let expected = toc!(
-            (2, "0.1", ),
-
-            (1, "1",
-             ((2, "1.1", ((3, "1.1.1", )) ((3, "1.1.2", ))))
-             ((2, "1.2", ((3, "1.2.1", )) ((3, "1.2.2", ))))
-             ),
-
-            (1, "2", ),
-
-            (1, "3",
-             ((4, "3.0.0.1", ((6, "3.0.0.1.0.1", ))))
-             ((4, "3.0.0.2", ))
-             ((2, "3.1", ((4, "3.1.0.1", ))))
-             )
-            );
-        assert_eq!(expected, builder.into_toc());
-    }
-}
+mod tests;

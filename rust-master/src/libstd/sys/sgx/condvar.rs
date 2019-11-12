@@ -27,13 +27,12 @@ impl Condvar {
 
     pub unsafe fn wait(&self, mutex: &Mutex) {
         let guard = self.inner.lock();
-        mutex.unlock();
-        WaitQueue::wait(guard);
+        WaitQueue::wait(guard, || mutex.unlock());
         mutex.lock()
     }
 
     pub unsafe fn wait_timeout(&self, _mutex: &Mutex, _dur: Duration) -> bool {
-        panic!("timeout not supported in SGX");
+        rtabort!("timeout not supported in SGX");
     }
 
     #[inline]

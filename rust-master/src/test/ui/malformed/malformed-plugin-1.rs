@@ -1,4 +1,5 @@
 #![feature(plugin)]
-#![plugin] //~ ERROR attribute must be of the form
+#![plugin] //~ ERROR malformed `plugin` attribute
+//~| WARN use of deprecated attribute `plugin`: compiler plugins are deprecated
 
 fn main() {}

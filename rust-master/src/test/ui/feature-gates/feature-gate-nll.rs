@@ -1,18 +1,18 @@
-// This is a test checking that if you do not opt into NLL then you
-// should not get the effects of NLL applied to the test.
+// There isn't a great way to test feature(nll), since it just disables migrate
+// mode and changes some error messages.
 
-// Don't use 2018 edition, since that turns on NLL (migration mode).
-// edition:2015
+// FIXME(Centril): This test is probably obsolete now and `nll` should become
+// `accepted`.
 
 // Don't use compare-mode=nll, since that turns on NLL.
 // ignore-compare-mode-nll
-
-
-#![allow(dead_code)]
+// ignore-compare-mode-polonius
 
 fn main() {
-    let mut x = 33;
+    let mut x = (33, &0);
 
-    let p = &x;
-    x = 22; //~ ERROR cannot assign to `x` because it is borrowed [E0506]
+    let m = &mut x;
+    let p = &*x.1;
+    //~^ ERROR cannot borrow
+    m;
 }

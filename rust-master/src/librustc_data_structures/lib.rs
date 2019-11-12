@@ -22,24 +22,19 @@
 #![feature(stmt_expr_attributes)]
 #![feature(core_intrinsics)]
 #![feature(integer_atomics)]
+#![feature(test)]
+#![feature(associated_type_bounds)]
 
 #![cfg_attr(unix, feature(libc))]
-#![cfg_attr(test, feature(test))]
 
-#![deny(rust_2018_idioms)]
+#![allow(rustc::default_hash_types)]
 
 #[macro_use]
 extern crate log;
-#[allow(unused_extern_crates)]
-extern crate serialize as rustc_serialize; // used by deriving
 #[cfg(unix)]
 extern crate libc;
 #[macro_use]
 extern crate cfg_if;
-
-// See librustc_cratesio_shim/Cargo.toml for a comment explaining this.
-#[allow(unused_extern_crates)]
-extern crate rustc_cratesio_shim;
 
 pub use rustc_serialize::hex::ToHex;
 
@@ -72,14 +67,13 @@ macro_rules! unlikely {
 pub mod macros;
 pub mod svh;
 pub mod base_n;
-pub mod bit_set;
+pub mod binary_search_util;
 pub mod box_region;
 pub mod const_cstr;
 pub mod flock;
 pub mod fx;
+pub mod stable_map;
 pub mod graph;
-pub mod indexed_vec;
-pub mod interner;
 pub mod jobserver;
 pub mod obligation_forest;
 pub mod owning_ref;
@@ -89,8 +83,10 @@ pub mod small_c_str;
 pub mod snapshot_map;
 pub use ena::snapshot_vec;
 pub mod sorted_map;
+pub mod stable_set;
 #[macro_use] pub mod stable_hasher;
 pub mod sync;
+pub mod sharded;
 pub mod tiny_list;
 pub mod thin_vec;
 pub mod transitive_relation;

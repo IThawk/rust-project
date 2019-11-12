@@ -6,11 +6,10 @@ extern crate syntax;
 // Load rustc as a plugin to get macros
 #[macro_use]
 extern crate rustc;
-extern crate rustc_plugin;
+extern crate rustc_driver;
 
-use rustc::lint::{EarlyContext, LintContext, LintPass, EarlyLintPass,
-                  LintArray};
-use rustc_plugin::Registry;
+use rustc::lint::{EarlyContext, EarlyLintPass, LintArray, LintContext, LintPass};
+use rustc_driver::plugin::Registry;
 use syntax::ast;
 declare_tool_lint!(pub clippy::TEST_LINT, Warn, "Warn about stuff");
 declare_tool_lint!(
@@ -19,24 +18,21 @@ declare_tool_lint!(
     Warn, "Warn about other stuff"
 );
 
-struct Pass;
+declare_tool_lint!(
+    /// Some docs
+    pub rustc::TEST_RUSTC_TOOL_LINT,
+    Deny,
+    "Deny internal stuff"
+);
 
-impl LintPass for Pass {
-    fn name(&self) -> &'static str {
-        "Pass"
-    }
-
-    fn get_lints(&self) -> LintArray {
-        lint_array!(TEST_LINT, TEST_GROUP)
-    }
-}
+declare_lint_pass!(Pass => [TEST_LINT, TEST_GROUP, TEST_RUSTC_TOOL_LINT]);
 
 impl EarlyLintPass for Pass {
     fn check_item(&mut self, cx: &EarlyContext, it: &ast::Item) {
-        if it.ident.name == "lintme" {
+        if it.ident.name.as_str() == "lintme" {
             cx.span_lint(TEST_LINT, it.span, "item is named 'lintme'");
         }
-        if it.ident.name == "lintmetoo" {
+        if it.ident.name.as_str() == "lintmetoo" {
             cx.span_lint(TEST_GROUP, it.span, "item is named 'lintmetoo'");
         }
     }

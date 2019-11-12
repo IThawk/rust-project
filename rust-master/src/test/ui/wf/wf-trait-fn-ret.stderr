@@ -1,15 +1,14 @@
 error[E0277]: the trait bound `Self: std::cmp::Eq` is not satisfied
   --> $DIR/wf-trait-fn-ret.rs:10:5
    |
-LL |     fn bar(&self) -> &Bar<Self>;
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the trait `std::cmp::Eq` is not implemented for `Self`
-   |
-   = help: consider adding a `where Self: std::cmp::Eq` bound
-note: required by `Bar`
-  --> $DIR/wf-trait-fn-ret.rs:7:1
-   |
 LL | struct Bar<T:Eq+?Sized> { value: Box<T> }
-   | ^^^^^^^^^^^^^^^^^^^^^^^
+   | ----------------------- required by `Bar`
+...
+LL |     fn bar(&self) -> &Bar<Self>;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^-
+   |     |                          |
+   |     |                          help: consider further restricting `Self`: `where Self: std::cmp::Eq`
+   |     the trait `std::cmp::Eq` is not implemented for `Self`
 
 error: aborting due to previous error
 

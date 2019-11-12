@@ -1,6 +1,3 @@
-// Tests that we are able to distinguish when loans borrow different
-// anonymous fields of an enum variant vs the same anonymous field.
-
 enum Foo {
     X, Y(usize, usize)
 }
@@ -13,8 +10,12 @@ fn distinct_variant() {
       Foo::X => panic!()
     };
 
+    // While `a` and `b` are disjoint, borrowck doesn't know that `a` is not
+    // also used for the discriminant of `Foo`, which it would be if `a` was a
+    // reference.
     let b = match y {
       Foo::Y(_, ref mut b) => b,
+      //~^ ERROR cannot use `y`
       Foo::X => panic!()
     };
 
@@ -31,7 +32,8 @@ fn same_variant() {
     };
 
     let b = match y {
-      Foo::Y(ref mut b, _) => b, //~ ERROR cannot borrow
+      Foo::Y(ref mut b, _) => b, //~ ERROR cannot use `y`
+      //~| ERROR cannot borrow `y.0` as mutable
       Foo::X => panic!()
     };
 

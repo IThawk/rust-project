@@ -12,13 +12,14 @@
 use crate::source_map::{SourceMap, FilePathMapping};
 
 use errors::registry::Registry;
-use errors::{DiagnosticBuilder, SubDiagnostic, CodeSuggestion, SourceMapper};
+use errors::{SubDiagnostic, CodeSuggestion, SourceMapper, SourceMapperDyn};
 use errors::{DiagnosticId, Applicability};
-use errors::emitter::{Emitter, EmitterWriter};
+use errors::emitter::{Emitter, HumanReadableErrorType};
 
 use syntax_pos::{MacroBacktrace, Span, SpanLabel, MultiSpan};
 use rustc_data_structures::sync::{self, Lrc};
 use std::io::{self, Write};
+use std::path::Path;
 use std::vec;
 use std::sync::{Arc, Mutex};
 
@@ -30,37 +31,55 @@ pub struct JsonEmitter {
     sm: Lrc<dyn SourceMapper + sync::Send + sync::Sync>,
     pretty: bool,
     ui_testing: bool,
+    json_rendered: HumanReadableErrorType,
+    external_macro_backtrace: bool,
 }
 
 impl JsonEmitter {
-    pub fn stderr(registry: Option<Registry>,
-                  source_map: Lrc<SourceMap>,
-                  pretty: bool) -> JsonEmitter {
+    pub fn stderr(
+        registry: Option<Registry>,
+        source_map: Lrc<SourceMap>,
+        pretty: bool,
+        json_rendered: HumanReadableErrorType,
+        external_macro_backtrace: bool,
+    ) -> JsonEmitter {
         JsonEmitter {
             dst: Box::new(io::stderr()),
             registry,
             sm: source_map,
             pretty,
             ui_testing: false,
+            json_rendered,
+            external_macro_backtrace,
         }
     }
 
-    pub fn basic(pretty: bool) -> JsonEmitter {
+    pub fn basic(
+        pretty: bool,
+        json_rendered: HumanReadableErrorType,
+        external_macro_backtrace: bool,
+    ) -> JsonEmitter {
         let file_path_mapping = FilePathMapping::empty();
         JsonEmitter::stderr(None, Lrc::new(SourceMap::new(file_path_mapping)),
-                            pretty)
+                            pretty, json_rendered, external_macro_backtrace)
     }
 
-    pub fn new(dst: Box<dyn Write + Send>,
-               registry: Option<Registry>,
-               source_map: Lrc<SourceMap>,
-               pretty: bool) -> JsonEmitter {
+    pub fn new(
+        dst: Box<dyn Write + Send>,
+        registry: Option<Registry>,
+        source_map: Lrc<SourceMap>,
+        pretty: bool,
+        json_rendered: HumanReadableErrorType,
+        external_macro_backtrace: bool,
+    ) -> JsonEmitter {
         JsonEmitter {
             dst,
             registry,
             sm: source_map,
             pretty,
             ui_testing: false,
+            json_rendered,
+            external_macro_backtrace,
         }
     }
 
@@ -70,8 +89,8 @@ impl JsonEmitter {
 }
 
 impl Emitter for JsonEmitter {
-    fn emit(&mut self, db: &DiagnosticBuilder<'_>) {
-        let data = Diagnostic::from_diagnostic_builder(db, self);
+    fn emit_diagnostic(&mut self, diag: &errors::Diagnostic) {
+        let data = Diagnostic::from_errors_diagnostic(diag, self);
         let result = if self.pretty {
             writeln!(&mut self.dst, "{}", as_pretty_json(&data))
         } else {
@@ -79,6 +98,29 @@ impl Emitter for JsonEmitter {
         };
         if let Err(e) = result {
             panic!("failed to print diagnostics: {:?}", e);
+        }
+    }
+
+    fn emit_artifact_notification(&mut self, path: &Path, artifact_type: &str) {
+        let data = ArtifactNotification { artifact: path, emit: artifact_type };
+        let result = if self.pretty {
+            writeln!(&mut self.dst, "{}", as_pretty_json(&data))
+        } else {
+            writeln!(&mut self.dst, "{}", as_json(&data))
+        };
+        if let Err(e) = result {
+            panic!("failed to print notification: {:?}", e);
+        }
+    }
+
+    fn source_map(&self) -> Option<&Lrc<SourceMapperDyn>> {
+        Some(&self.sm)
+    }
+
+    fn should_show_explain(&self) -> bool {
+        match self.json_rendered {
+            HumanReadableErrorType::Short(_) => false,
+            _ => true,
         }
     }
 }
@@ -100,7 +142,6 @@ struct Diagnostic {
 }
 
 #[derive(RustcEncodable)]
-#[allow(unused_attributes)]
 struct DiagnosticSpan {
     file_name: String,
     byte_start: u32,
@@ -148,7 +189,7 @@ struct DiagnosticSpanMacroExpansion {
     macro_decl_name: String,
 
     /// span where macro was defined (if known)
-    def_site_span: Option<DiagnosticSpan>,
+    def_site_span: DiagnosticSpan,
 }
 
 #[derive(RustcEncodable)]
@@ -159,11 +200,19 @@ struct DiagnosticCode {
     explanation: Option<&'static str>,
 }
 
+#[derive(RustcEncodable)]
+struct ArtifactNotification<'a> {
+    /// The path of the artifact.
+    artifact: &'a Path,
+    /// What kind of artifact we're emitting.
+    emit: &'a str,
+}
+
 impl Diagnostic {
-    fn from_diagnostic_builder(db: &DiagnosticBuilder<'_>,
+    fn from_errors_diagnostic(diag: &errors::Diagnostic,
                                je: &JsonEmitter)
                                -> Diagnostic {
-        let sugg = db.suggestions.iter().map(|sugg| {
+        let sugg = diag.suggestions.iter().map(|sugg| {
             Diagnostic {
                 message: sugg.msg.clone(),
                 code: None,
@@ -190,31 +239,32 @@ impl Diagnostic {
         }
         let buf = BufWriter::default();
         let output = buf.clone();
-        EmitterWriter::new(Box::new(buf), Some(je.sm.clone()), false, false)
-            .ui_testing(je.ui_testing).emit(db);
+        je.json_rendered.new_emitter(
+            Box::new(buf), Some(je.sm.clone()), false, None, je.external_macro_backtrace
+        ).ui_testing(je.ui_testing).emit_diagnostic(diag);
         let output = Arc::try_unwrap(output.0).unwrap().into_inner().unwrap();
         let output = String::from_utf8(output).unwrap();
 
         Diagnostic {
-            message: db.message(),
-            code: DiagnosticCode::map_opt_string(db.code.clone(), je),
-            level: db.level.to_str(),
-            spans: DiagnosticSpan::from_multispan(&db.span, je),
-            children: db.children.iter().map(|c| {
+            message: diag.message(),
+            code: DiagnosticCode::map_opt_string(diag.code.clone(), je),
+            level: diag.level.to_str(),
+            spans: DiagnosticSpan::from_multispan(&diag.span, je),
+            children: diag.children.iter().map(|c| {
                 Diagnostic::from_sub_diagnostic(c, je)
             }).chain(sugg).collect(),
             rendered: Some(output),
         }
     }
 
-    fn from_sub_diagnostic(db: &SubDiagnostic, je: &JsonEmitter) -> Diagnostic {
+    fn from_sub_diagnostic(diag: &SubDiagnostic, je: &JsonEmitter) -> Diagnostic {
         Diagnostic {
-            message: db.message(),
+            message: diag.message(),
             code: None,
-            level: db.level.to_str(),
-            spans: db.render_span.as_ref()
+            level: diag.level.to_str(),
+            spans: diag.render_span.as_ref()
                      .map(|sp| DiagnosticSpan::from_multispan(sp, je))
-                     .unwrap_or_else(|| DiagnosticSpan::from_multispan(&db.span, je)),
+                     .unwrap_or_else(|| DiagnosticSpan::from_multispan(&diag.span, je)),
             children: vec![],
             rendered: None,
         }
@@ -270,14 +320,13 @@ impl DiagnosticSpan {
                                      None,
                                      backtrace,
                                      je);
-            let def_site_span = bt.def_site_span.map(|sp| {
-                Self::from_span_full(sp,
+            let def_site_span =
+                Self::from_span_full(bt.def_site_span,
                                      false,
                                      None,
                                      None,
                                      vec![].into_iter(),
-                                     je)
-            });
+                                     je);
             Box::new(DiagnosticSpanMacroExpansion {
                 span: call_site,
                 macro_decl_name: bt.macro_decl_name,
@@ -348,19 +397,17 @@ impl DiagnosticSpanLine {
     /// `span` within the line.
     fn from_span(span: Span, je: &JsonEmitter) -> Vec<DiagnosticSpanLine> {
         je.sm.span_to_lines(span)
-             .map(|lines| {
-                 let fm = &*lines.file;
-                 lines.lines
-                      .iter()
-                      .map(|line| {
-                          DiagnosticSpanLine::line_from_source_file(fm,
-                                                                line.line_index,
-                                                                line.start_col.0 + 1,
-                                                                line.end_col.0 + 1)
-                      })
-                     .collect()
-             })
-            .unwrap_or_else(|_| vec![])
+            .map(|lines| {
+                let fm = &*lines.file;
+                lines.lines
+                    .iter()
+                    .map(|line| DiagnosticSpanLine::line_from_source_file(
+                        fm,
+                        line.line_index,
+                        line.start_col.0 + 1,
+                        line.end_col.0 + 1,
+                    )).collect()
+            }).unwrap_or_else(|_| vec![])
     }
 }
 

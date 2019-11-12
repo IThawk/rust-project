@@ -1,9 +1,10 @@
 use crate::infer::InferCtxt;
 use crate::infer::canonical::OriginalQueryValues;
-use crate::traits::{EvaluationResult, PredicateObligation, SelectionContext,
-             TraitQueryMode, OverflowError};
+use crate::traits::{
+    EvaluationResult, PredicateObligation, SelectionContext, TraitQueryMode, OverflowError,
+};
 
-impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
+impl<'cx, 'tcx> InferCtxt<'cx, 'tcx> {
     /// Evaluates whether the predicate can be satisfied (by any means)
     /// in the given `ParamEnv`.
     pub fn predicate_may_hold(
@@ -49,13 +50,13 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
         // Run canonical query. If overflow occurs, rerun from scratch but this time
         // in standard trait query mode so that overflow is handled appropriately
         // within `SelectionContext`.
-        self.tcx.global_tcx().evaluate_obligation(c_pred)
+        self.tcx.evaluate_obligation(c_pred)
     }
 
     // Helper function that canonicalizes and runs the query. If an
     // overflow results, we re-run it in the local context so we can
     // report a nice error.
-    fn evaluate_obligation_no_overflow(
+    crate fn evaluate_obligation_no_overflow(
         &self,
         obligation: &PredicateObligation<'tcx>,
     ) -> EvaluationResult {
@@ -64,7 +65,7 @@ impl<'cx, 'gcx, 'tcx> InferCtxt<'cx, 'gcx, 'tcx> {
             Err(OverflowError) => {
                 let mut selcx =
                     SelectionContext::with_query_mode(&self, TraitQueryMode::Standard);
-                selcx.evaluate_obligation_recursively(obligation)
+                selcx.evaluate_root_obligation(obligation)
                     .unwrap_or_else(|r| {
                         span_bug!(
                             obligation.cause.span,

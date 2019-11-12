@@ -3,11 +3,10 @@ error: character literal may only contain one codepoint
    |
 LL |     'nope'
    |     ^^^^^^
-
-error[E0601]: `main` function not found in crate `lex_bad_char_literals_2`
+help: if you meant to write a `str` literal, use double quotes
    |
-   = note: consider adding a `main` function to `$DIR/lex-bad-char-literals-2.rs`
+LL |     "nope"
+   |     ^^^^^^
 
-error: aborting due to 2 previous errors
+error: aborting due to previous error
 
-For more information about this error, try `rustc --explain E0601`.

@@ -120,7 +120,7 @@ functions.
             reason = "internal routines only exposed for testing",
             issue = "0")]
 
-use i16;
+use crate::i16;
 pub use self::decoder::{decode, DecodableFloat, FullDecoded, Decoded};
 
 pub mod estimator;
@@ -239,10 +239,8 @@ impl<'a> Formatted<'a> {
 
         let mut written = self.sign.len();
         for part in self.parts {
-            match part.write(&mut out[written..]) {
-                Some(len) => { written += len; }
-                None => { return None; }
-            }
+            let len = part.write(&mut out[written..])?;
+            written += len;
         }
         Some(written)
     }

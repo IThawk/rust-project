@@ -1,5 +1,5 @@
-use fmt;
-use hash::{Hash, Hasher};
+use crate::fmt;
+use crate::hash::{Hash, Hasher};
 
 /// An unbounded range (`..`).
 ///
@@ -45,7 +45,7 @@ pub struct RangeFull;
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for RangeFull {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "..")
     }
 }
@@ -84,8 +84,11 @@ pub struct Range<Idx> {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl<Idx: fmt::Debug> fmt::Debug for Range<Idx> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?}..{:?}", self.start, self.end)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.start.fmt(fmt)?;
+        write!(fmt, "..")?;
+        self.end.fmt(fmt)?;
+        Ok(())
     }
 }
 
@@ -183,8 +186,10 @@ pub struct RangeFrom<Idx> {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl<Idx: fmt::Debug> fmt::Debug for RangeFrom<Idx> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?}..", self.start)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.start.fmt(fmt)?;
+        write!(fmt, "..")?;
+        Ok(())
     }
 }
 
@@ -265,8 +270,10 @@ pub struct RangeTo<Idx> {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl<Idx: fmt::Debug> fmt::Debug for RangeTo<Idx> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "..{:?}", self.end)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "..")?;
+        self.end.fmt(fmt)?;
+        Ok(())
     }
 }
 
@@ -466,8 +473,11 @@ impl<Idx> RangeInclusive<Idx> {
 
 #[stable(feature = "inclusive_range", since = "1.26.0")]
 impl<Idx: fmt::Debug> fmt::Debug for RangeInclusive<Idx> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?}..={:?}", self.start, self.end)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.start.fmt(fmt)?;
+        write!(fmt, "..=")?;
+        self.end.fmt(fmt)?;
+        Ok(())
     }
 }
 
@@ -601,8 +611,10 @@ pub struct RangeToInclusive<Idx> {
 
 #[stable(feature = "inclusive_range", since = "1.26.0")]
 impl<Idx: fmt::Debug> fmt::Debug for RangeToInclusive<Idx> {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "..={:?}", self.end)
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "..=")?;
+        self.end.fmt(fmt)?;
+        Ok(())
     }
 }
 
@@ -682,6 +694,29 @@ pub enum Bound<T> {
     /// An infinite endpoint. Indicates that there is no bound in this direction.
     #[stable(feature = "collections_bound", since = "1.17.0")]
     Unbounded,
+}
+
+impl<T: Clone> Bound<&T> {
+    /// Map a `Bound<&T>` to a `Bound<T>` by cloning the contents of the bound.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// #![feature(bound_cloned)]
+    /// use std::ops::Bound::*;
+    /// use std::ops::RangeBounds;
+    ///
+    /// assert_eq!((1..12).start_bound(), Included(&1));
+    /// assert_eq!((1..12).start_bound().cloned(), Included(1));
+    /// ```
+    #[unstable(feature = "bound_cloned", issue = "61356")]
+    pub fn cloned(self) -> Bound<T> {
+        match self {
+            Bound::Unbounded => Bound::Unbounded,
+            Bound::Included(x) => Bound::Included(x.clone()),
+            Bound::Excluded(x) => Bound::Excluded(x.clone()),
+        }
+    }
 }
 
 #[stable(feature = "collections_range", since = "1.28.0")]

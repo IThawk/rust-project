@@ -1,6 +1,4 @@
-// run-pass
-
-#![feature(nll)]
+// check-pass
 
 enum Nat {
     S(Box<Nat>),

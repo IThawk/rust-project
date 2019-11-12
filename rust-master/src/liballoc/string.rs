@@ -56,7 +56,7 @@ use core::ptr;
 use core::str::{pattern::Pattern, lossy};
 
 use crate::borrow::{Cow, ToOwned};
-use crate::collections::CollectionAllocErr;
+use crate::collections::TryReserveError;
 use crate::boxed::Box;
 use crate::str::{self, from_boxed_utf8_unchecked, FromStr, Utf8Error, Chars};
 use crate::vec::Vec;
@@ -164,10 +164,8 @@ use crate::vec::Vec;
 ///
 /// fn example_func<A: TraitExample>(example_arg: A) {}
 ///
-/// fn main() {
-///     let example_string = String::from("example_string");
-///     example_func(&example_string);
-/// }
+/// let example_string = String::from("example_string");
+/// example_func(&example_string);
 /// ```
 ///
 /// There are two options that would work instead. The first would be to
@@ -369,7 +367,6 @@ impl String {
     /// ```
     #[inline]
     #[stable(feature = "rust1", since = "1.0.0")]
-    #[rustc_const_unstable(feature = "const_string_new")]
     pub const fn new() -> String {
         String { vec: Vec::new() }
     }
@@ -429,7 +426,7 @@ impl String {
 
     /// Converts a vector of bytes to a `String`.
     ///
-    /// A string slice ([`&str`]) is made of bytes ([`u8`]), and a vector of bytes
+    /// A string ([`String`]) is made of bytes ([`u8`]), and a vector of bytes
     /// ([`Vec<u8>`]) is made of bytes, so this function converts between the
     /// two. Not all byte slices are valid `String`s, however: `String`
     /// requires that it is valid UTF-8. `from_utf8()` checks to ensure that
@@ -446,7 +443,7 @@ impl String {
     /// If you need a [`&str`] instead of a `String`, consider
     /// [`str::from_utf8`].
     ///
-    /// The inverse of this method is [`as_bytes`].
+    /// The inverse of this method is [`into_bytes`].
     ///
     /// # Errors
     ///
@@ -480,11 +477,11 @@ impl String {
     /// with this error.
     ///
     /// [`from_utf8_unchecked`]: struct.String.html#method.from_utf8_unchecked
-    /// [`&str`]: ../../std/primitive.str.html
+    /// [`String`]: struct.String.html
     /// [`u8`]: ../../std/primitive.u8.html
     /// [`Vec<u8>`]: ../../std/vec/struct.Vec.html
     /// [`str::from_utf8`]: ../../std/str/fn.from_utf8.html
-    /// [`as_bytes`]: struct.String.html#method.as_bytes
+    /// [`into_bytes`]: struct.String.html#method.into_bytes
     /// [`FromUtf8Error`]: struct.FromUtf8Error.html
     /// [`Err`]: ../../std/result/enum.Result.html#variant.Err
     #[inline]
@@ -552,7 +549,7 @@ impl String {
     /// assert_eq!("Hello �World", output);
     /// ```
     #[stable(feature = "rust1", since = "1.0.0")]
-    pub fn from_utf8_lossy<'a>(v: &'a [u8]) -> Cow<'a, str> {
+    pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
         let mut iter = lossy::Utf8Lossy::from_bytes(v).chunks();
 
         let (first_valid, first_broken) = if let Some(chunk) = iter.next() {
@@ -937,9 +934,9 @@ impl String {
     ///
     /// ```
     /// #![feature(try_reserve)]
-    /// use std::collections::CollectionAllocErr;
+    /// use std::collections::TryReserveError;
     ///
-    /// fn process_data(data: &str) -> Result<String, CollectionAllocErr> {
+    /// fn process_data(data: &str) -> Result<String, TryReserveError> {
     ///     let mut output = String::new();
     ///
     ///     // Pre-reserve the memory, exiting if we can't
@@ -953,7 +950,7 @@ impl String {
     /// # process_data("rust").expect("why is the test harness OOMing on 4 bytes?");
     /// ```
     #[unstable(feature = "try_reserve", reason = "new API", issue="48043")]
-    pub fn try_reserve(&mut self, additional: usize) -> Result<(), CollectionAllocErr> {
+    pub fn try_reserve(&mut self, additional: usize) -> Result<(), TryReserveError> {
         self.vec.try_reserve(additional)
     }
 
@@ -975,9 +972,9 @@ impl String {
     ///
     /// ```
     /// #![feature(try_reserve)]
-    /// use std::collections::CollectionAllocErr;
+    /// use std::collections::TryReserveError;
     ///
-    /// fn process_data(data: &str) -> Result<String, CollectionAllocErr> {
+    /// fn process_data(data: &str) -> Result<String, TryReserveError> {
     ///     let mut output = String::new();
     ///
     ///     // Pre-reserve the memory, exiting if we can't
@@ -991,7 +988,7 @@ impl String {
     /// # process_data("rust").expect("why is the test harness OOMing on 4 bytes?");
     /// ```
     #[unstable(feature = "try_reserve", reason = "new API", issue="48043")]
-    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), CollectionAllocErr>  {
+    pub fn try_reserve_exact(&mut self, additional: usize) -> Result<(), TryReserveError>  {
         self.vec.try_reserve_exact(additional)
     }
 
@@ -1200,8 +1197,8 @@ impl String {
     /// Retains only the characters specified by the predicate.
     ///
     /// In other words, remove all characters `c` such that `f(c)` returns `false`.
-    /// This method operates in place and preserves the order of the retained
-    /// characters.
+    /// This method operates in place, visiting each character exactly once in the
+    /// original order, and preserves the order of the retained characters.
     ///
     /// # Examples
     ///
@@ -1211,6 +1208,16 @@ impl String {
     /// s.retain(|c| c != '_');
     ///
     /// assert_eq!(s, "foobar");
+    /// ```
+    ///
+    /// The exact order may be useful for tracking external state, like an index.
+    ///
+    /// ```
+    /// let mut s = String::from("abcde");
+    /// let keep = [false, true, true, false, true];
+    /// let mut i = 0;
+    /// s.retain(|_| (keep[i], i += 1).0);
+    /// assert_eq!(s, "bce");
     /// ```
     #[inline]
     #[stable(feature = "string_retain", since = "1.26.0")]
@@ -1828,6 +1835,7 @@ impl PartialEq for String {
 macro_rules! impl_eq {
     ($lhs:ty, $rhs: ty) => {
         #[stable(feature = "rust1", since = "1.0.0")]
+        #[allow(unused_lifetimes)]
         impl<'a, 'b> PartialEq<$rhs> for $lhs {
             #[inline]
             fn eq(&self, other: &$rhs) -> bool { PartialEq::eq(&self[..], &other[..]) }
@@ -1836,6 +1844,7 @@ macro_rules! impl_eq {
         }
 
         #[stable(feature = "rust1", since = "1.0.0")]
+        #[allow(unused_lifetimes)]
         impl<'a, 'b> PartialEq<$lhs> for $rhs {
             #[inline]
             fn eq(&self, other: &$lhs) -> bool { PartialEq::eq(&self[..], &other[..]) }
@@ -2179,6 +2188,14 @@ impl From<&str> for String {
     }
 }
 
+#[stable(feature = "from_ref_string", since = "1.35.0")]
+impl From<&String> for String {
+    #[inline]
+    fn from(s: &String) -> String {
+        s.clone()
+    }
+}
+
 // note: test pulls in libstd, which causes errors here
 #[cfg(not(test))]
 #[stable(feature = "string_from_box", since = "1.18.0")]
@@ -2366,6 +2383,11 @@ impl Iterator for Drain<'_> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
+    }
+
+    #[inline]
+    fn last(mut self) -> Option<char> {
+        self.next_back()
     }
 }
 

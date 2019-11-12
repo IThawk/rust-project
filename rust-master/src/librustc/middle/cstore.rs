@@ -32,6 +32,12 @@ pub struct CrateSource {
     pub rmeta: Option<(PathBuf, PathKind)>,
 }
 
+impl CrateSource {
+    pub fn paths(&self) -> impl Iterator<Item = &PathBuf> {
+        self.dylib.iter().chain(self.rlib.iter()).chain(self.rmeta.iter()).map(|p| &p.0)
+    }
+}
+
 #[derive(RustcEncodable, RustcDecodable, Copy, Clone,
          Ord, PartialOrd, Eq, PartialEq, Debug, HashStable)]
 pub enum DepKind {
@@ -87,7 +93,7 @@ pub enum LinkagePreference {
     RequireStatic,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
          RustcEncodable, RustcDecodable, HashStable)]
 pub enum NativeLibraryKind {
     /// native static library (.a archive)
@@ -96,11 +102,13 @@ pub enum NativeLibraryKind {
     NativeStaticNobundle,
     /// macOS-specific
     NativeFramework,
+    /// Windows dynamic library without import library.
+    NativeRawDylib,
     /// default way to specify a dynamic library
     NativeUnknown,
 }
 
-#[derive(Clone, RustcEncodable, RustcDecodable, HashStable)]
+#[derive(Clone, Debug, RustcEncodable, RustcDecodable, HashStable)]
 pub struct NativeLibrary {
     pub kind: NativeLibraryKind,
     pub name: Option<Symbol>,
@@ -126,10 +134,17 @@ pub struct ExternCrate {
     /// used to select the extern with the shortest path
     pub path_len: usize,
 
+    /// Crate that depends on this crate
+    pub dependency_of: CrateNum,
+}
+
+impl ExternCrate {
     /// If true, then this crate is the crate named by the extern
     /// crate referenced above. If false, then this crate is a dep
     /// of the crate.
-    pub direct: bool,
+    pub fn is_direct(&self) -> bool {
+        self.dependency_of == LOCAL_CRATE
+    }
 }
 
 #[derive(Copy, Clone, Debug, HashStable)]
@@ -141,9 +156,7 @@ pub enum ExternCrateSource {
         /// such ids
         DefId,
     ),
-    // Crate is loaded by `use`.
-    Use,
-    /// Crate is implicitly loaded by an absolute path.
+    /// Crate is implicitly loaded by a path resolving through extern prelude.
     Path,
 }
 
@@ -178,8 +191,7 @@ pub trait MetadataLoader {
                           -> Result<MetadataRef, String>;
 }
 
-/// A store of Rust crates, through with their metadata
-/// can be accessed.
+/// A store of Rust crates, through which their metadata can be accessed.
 ///
 /// Note that this trait should probably not be expanding today. All new
 /// functionality should be driven through queries instead!
@@ -199,9 +211,9 @@ pub trait CrateStore {
 
     // "queries" used in resolve that aren't tracked for incremental compilation
     fn crate_name_untracked(&self, cnum: CrateNum) -> Symbol;
+    fn crate_is_private_dep_untracked(&self, cnum: CrateNum) -> bool;
     fn crate_disambiguator_untracked(&self, cnum: CrateNum) -> CrateDisambiguator;
     fn crate_hash_untracked(&self, cnum: CrateNum) -> Svh;
-    fn extern_mod_stmt_cnum_untracked(&self, emod_id: ast::NodeId) -> Option<CrateNum>;
     fn item_generics_cloned_untracked(&self, def: DefId, sess: &Session) -> ty::Generics;
     fn postorder_cnums_untracked(&self) -> Vec<CrateNum>;
 
@@ -210,9 +222,7 @@ pub trait CrateStore {
     fn crates_untracked(&self) -> Vec<CrateNum>;
 
     // utility functions
-    fn encode_metadata<'a, 'tcx>(&self,
-                                 tcx: TyCtxt<'a, 'tcx, 'tcx>)
-                                 -> EncodedMetadata;
+    fn encode_metadata(&self, tcx: TyCtxt<'_>) -> EncodedMetadata;
     fn metadata_encoding_version(&self) -> &[u8];
 }
 
@@ -227,9 +237,7 @@ pub type CrateStoreDyn = dyn CrateStore + sync::Sync;
 // In order to get this left-to-right dependency ordering, we perform a
 // topological sort of all crates putting the leaves at the right-most
 // positions.
-pub fn used_crates(tcx: TyCtxt<'_, '_, '_>, prefer: LinkagePreference)
-    -> Vec<(CrateNum, LibSource)>
-{
+pub fn used_crates(tcx: TyCtxt<'_>, prefer: LinkagePreference) -> Vec<(CrateNum, LibSource)> {
     let mut libs = tcx.crates()
         .iter()
         .cloned()
@@ -255,8 +263,8 @@ pub fn used_crates(tcx: TyCtxt<'_, '_, '_>, prefer: LinkagePreference)
             Some((cnum, path))
         })
         .collect::<Vec<_>>();
-    let mut ordering = tcx.postorder_cnums(LOCAL_CRATE);
-    Lrc::make_mut(&mut ordering).reverse();
+    let mut ordering = tcx.postorder_cnums(LOCAL_CRATE).to_owned();
+    ordering.reverse();
     libs.sort_by_cached_key(|&(a, _)| {
         ordering.iter().position(|x| *x == a)
     });

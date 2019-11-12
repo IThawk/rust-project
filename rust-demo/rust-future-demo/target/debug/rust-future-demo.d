@@ -1,0 +1,1 @@
+F:\workspace\language\rust\rust-project\rust-demo\rust-future-demo\target\debug\rust-future-demo.exe: F:\workspace\language\rust\rust-project\rust-demo\rust-future-demo\src\loop_ex\mod.rs F:\workspace\language\rust\rust-project\rust-demo\rust-future-demo\src\loop_ex\task1.rs F:\workspace\language\rust\rust-project\rust-demo\rust-future-demo\src\main.rs

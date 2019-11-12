@@ -2,11 +2,10 @@
 //!
 //! See comments in `src/bootstrap/rustc.rs` for more information.
 
-#![deny(warnings)]
-
 use std::env;
 use std::process::Command;
 use std::path::PathBuf;
+use std::ffi::OsString;
 
 fn main() {
     let args = env::args_os().skip(1).collect::<Vec<_>>();
@@ -46,7 +45,9 @@ fn main() {
         cmd.arg("-Z").arg("force-unstable-if-unmarked");
     }
     if let Some(linker) = env::var_os("RUSTC_TARGET_LINKER") {
-        cmd.arg("--linker").arg(linker).arg("-Z").arg("unstable-options");
+        let mut arg = OsString::from("-Clinker=");
+        arg.push(&linker);
+        cmd.arg(arg);
     }
 
     // Bootstrap's Cargo-command builder sets this variable to the current Rust version; let's pick
@@ -69,6 +70,17 @@ fn main() {
                .arg("unstable-options");
         }
         cmd.arg("--generate-redirect-pages");
+        has_unstable = true;
+    }
+
+    // Needed to be able to run all rustdoc tests.
+    if let Some(ref x) = env::var_os("RUSTDOC_RESOURCE_SUFFIX") {
+        // This "unstable-options" can be removed when `--resource-suffix` is stabilized
+        if !has_unstable {
+            cmd.arg("-Z")
+               .arg("unstable-options");
+        }
+        cmd.arg("--resource-suffix").arg(x);
     }
 
     if verbose > 1 {

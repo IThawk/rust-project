@@ -1,4 +1,4 @@
-use crate::infer::canonical::{Canonical, Canonicalized, CanonicalizedQueryResponse, QueryResponse};
+use crate::infer::canonical::{Canonicalized, CanonicalizedQueryResponse};
 use crate::traits::query::Fallible;
 use crate::ty::{ParamEnvAnd, Ty, TyCtxt};
 
@@ -14,11 +14,11 @@ impl<'tcx> Eq<'tcx> {
     }
 }
 
-impl<'gcx: 'tcx, 'tcx> super::QueryTypeOp<'gcx, 'tcx> for Eq<'tcx> {
+impl<'tcx> super::QueryTypeOp<'tcx> for Eq<'tcx> {
     type QueryResponse = ();
 
     fn try_fast_path(
-        _tcx: TyCtxt<'_, 'gcx, 'tcx>,
+        _tcx: TyCtxt<'tcx>,
         key: &ParamEnvAnd<'tcx, Eq<'tcx>>,
     ) -> Option<Self::QueryResponse> {
         if key.value.a == key.value.b {
@@ -29,16 +29,10 @@ impl<'gcx: 'tcx, 'tcx> super::QueryTypeOp<'gcx, 'tcx> for Eq<'tcx> {
     }
 
     fn perform_query(
-        tcx: TyCtxt<'_, 'gcx, 'tcx>,
-        canonicalized: Canonicalized<'gcx, ParamEnvAnd<'tcx, Self>>,
-    ) -> Fallible<CanonicalizedQueryResponse<'gcx, ()>> {
+        tcx: TyCtxt<'tcx>,
+        canonicalized: Canonicalized<'tcx, ParamEnvAnd<'tcx, Self>>,
+    ) -> Fallible<CanonicalizedQueryResponse<'tcx, ()>> {
         tcx.type_op_eq(canonicalized)
-    }
-
-    fn shrink_to_tcx_lifetime(
-        v: &'a CanonicalizedQueryResponse<'gcx, ()>,
-    ) -> &'a Canonical<'tcx, QueryResponse<'tcx, ()>> {
-        v
     }
 }
 

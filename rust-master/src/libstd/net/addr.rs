@@ -217,11 +217,9 @@ impl SocketAddr {
     /// ```
     /// use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     ///
-    /// fn main() {
-    ///     let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
-    ///     assert_eq!(socket.is_ipv4(), true);
-    ///     assert_eq!(socket.is_ipv6(), false);
-    /// }
+    /// let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+    /// assert_eq!(socket.is_ipv4(), true);
+    /// assert_eq!(socket.is_ipv6(), false);
     /// ```
     #[stable(feature = "sockaddr_checker", since = "1.16.0")]
     pub fn is_ipv4(&self) -> bool {
@@ -244,12 +242,9 @@ impl SocketAddr {
     /// ```
     /// use std::net::{IpAddr, Ipv6Addr, SocketAddr};
     ///
-    /// fn main() {
-    ///     let socket = SocketAddr::new(
-    ///                      IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 65535, 0, 1)), 8080);
-    ///     assert_eq!(socket.is_ipv4(), false);
-    ///     assert_eq!(socket.is_ipv6(), true);
-    /// }
+    /// let socket = SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 65535, 0, 1)), 8080);
+    /// assert_eq!(socket.is_ipv4(), false);
+    /// assert_eq!(socket.is_ipv6(), true);
     /// ```
     #[stable(feature = "sockaddr_checker", since = "1.16.0")]
     pub fn is_ipv6(&self) -> bool {
@@ -546,6 +541,9 @@ impl FromInner<c::sockaddr_in6> for SocketAddrV6 {
 #[stable(feature = "ip_from_ip", since = "1.16.0")]
 impl From<SocketAddrV4> for SocketAddr {
     /// Converts a [`SocketAddrV4`] into a [`SocketAddr::V4`].
+    ///
+    /// [`SocketAddrV4`]: ../../std/net/struct.SocketAddrV4.html
+    /// [`SocketAddr::V4`]: ../../std/net/enum.SocketAddr.html#variant.V4
     fn from(sock4: SocketAddrV4) -> SocketAddr {
         SocketAddr::V4(sock4)
     }
@@ -554,6 +552,9 @@ impl From<SocketAddrV4> for SocketAddr {
 #[stable(feature = "ip_from_ip", since = "1.16.0")]
 impl From<SocketAddrV6> for SocketAddr {
     /// Converts a [`SocketAddrV6`] into a [`SocketAddr::V6`].
+    ///
+    /// [`SocketAddrV6`]: ../../std/net/struct.SocketAddrV6.html
+    /// [`SocketAddr::V6`]: ../../std/net/enum.SocketAddr.html#variant.V6
     fn from(sock6: SocketAddrV6) -> SocketAddr {
         SocketAddr::V6(sock6)
     }
@@ -567,6 +568,13 @@ impl<I: Into<IpAddr>> From<(I, u16)> for SocketAddr {
     /// and creates a [`SocketAddr::V6`] for a [`IpAddr::V6`].
     ///
     /// `u16` is treated as port of the newly created [`SocketAddr`].
+    ///
+    /// [`IpAddr`]: ../../std/net/enum.IpAddr.html
+    /// [`IpAddr::V4`]: ../../std/net/enum.IpAddr.html#variant.V4
+    /// [`IpAddr::V6`]: ../../std/net/enum.IpAddr.html#variant.V6
+    /// [`SocketAddr`]: ../../std/net/enum.SocketAddr.html
+    /// [`SocketAddr::V4`]: ../../std/net/enum.SocketAddr.html#variant.V4
+    /// [`SocketAddr::V6`]: ../../std/net/enum.SocketAddr.html#variant.V6
     fn from(pieces: (I, u16)) -> SocketAddr {
         SocketAddr::new(pieces.0.into(), pieces.1)
     }
@@ -587,7 +595,7 @@ impl<'a> IntoInner<(*const c::sockaddr, c::socklen_t)> for &'a SocketAddr {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Display for SocketAddr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             SocketAddr::V4(ref a) => a.fmt(f),
             SocketAddr::V6(ref a) => a.fmt(f),
@@ -597,28 +605,28 @@ impl fmt::Display for SocketAddr {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Display for SocketAddrV4 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}:{}", self.ip(), self.port())
     }
 }
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for SocketAddrV4 {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, fmt)
     }
 }
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Display for SocketAddrV6 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[{}]:{}", self.ip(), self.port())
     }
 }
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for SocketAddrV6 {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, fmt)
     }
 }
@@ -941,7 +949,10 @@ mod tests {
         assert_eq!(Ok(vec![a]), tsa(("2a02:6b8:0:1::1", 53)));
 
         let a = sa4(Ipv4Addr::new(127, 0, 0, 1), 23924);
+        #[cfg(not(target_env = "sgx"))]
         assert!(tsa(("localhost", 23924)).unwrap().contains(&a));
+        #[cfg(target_env = "sgx")]
+        let _ = a;
     }
 
     #[test]
@@ -953,7 +964,10 @@ mod tests {
         assert_eq!(Ok(vec![a]), tsa("[2a02:6b8:0:1::1]:53"));
 
         let a = sa4(Ipv4Addr::new(127, 0, 0, 1), 23924);
+        #[cfg(not(target_env = "sgx"))]
         assert!(tsa("localhost:23924").unwrap().contains(&a));
+        #[cfg(target_env = "sgx")]
+        let _ = a;
     }
 
     #[test]
@@ -968,9 +982,9 @@ mod tests {
         // s has been moved into the tsa call
     }
 
-    // FIXME: figure out why this fails on openbsd and bitrig and fix it
+    // FIXME: figure out why this fails on openbsd and fix it
     #[test]
-    #[cfg(not(any(windows, target_os = "openbsd", target_os = "bitrig")))]
+    #[cfg(not(any(windows, target_os = "openbsd")))]
     fn to_socket_addr_str_bad() {
         assert!(tsa("1200::AB00:1234::2552:7777:1313:34300").is_err());
     }

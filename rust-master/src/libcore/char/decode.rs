@@ -1,6 +1,7 @@
 //! UTF-8 and UTF-16 decoding iterators
 
-use fmt;
+use crate::fmt;
+
 use super::from_u32_unchecked;
 
 /// An iterator that decodes UTF-16 encoded code points from an iterator of `u16`s.
@@ -30,21 +31,23 @@ pub struct DecodeUtf16Error {
 /// ```
 /// use std::char::decode_utf16;
 ///
-/// fn main() {
-///     // 𝄞mus<invalid>ic<invalid>
-///     let v = [0xD834, 0xDD1E, 0x006d, 0x0075,
-///              0x0073, 0xDD1E, 0x0069, 0x0063,
-///              0xD834];
+/// // 𝄞mus<invalid>ic<invalid>
+/// let v = [
+///     0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834,
+/// ];
 ///
-///     assert_eq!(decode_utf16(v.iter().cloned())
-///                            .map(|r| r.map_err(|e| e.unpaired_surrogate()))
-///                            .collect::<Vec<_>>(),
-///                vec![Ok('𝄞'),
-///                     Ok('m'), Ok('u'), Ok('s'),
-///                     Err(0xDD1E),
-///                     Ok('i'), Ok('c'),
-///                     Err(0xD834)]);
-/// }
+/// assert_eq!(
+///     decode_utf16(v.iter().cloned())
+///         .map(|r| r.map_err(|e| e.unpaired_surrogate()))
+///         .collect::<Vec<_>>(),
+///     vec![
+///         Ok('𝄞'),
+///         Ok('m'), Ok('u'), Ok('s'),
+///         Err(0xDD1E),
+///         Ok('i'), Ok('c'),
+///         Err(0xD834)
+///     ]
+/// );
 /// ```
 ///
 /// A lossy decoder can be obtained by replacing `Err` results with the replacement character:
@@ -52,17 +55,17 @@ pub struct DecodeUtf16Error {
 /// ```
 /// use std::char::{decode_utf16, REPLACEMENT_CHARACTER};
 ///
-/// fn main() {
-///     // 𝄞mus<invalid>ic<invalid>
-///     let v = [0xD834, 0xDD1E, 0x006d, 0x0075,
-///              0x0073, 0xDD1E, 0x0069, 0x0063,
-///              0xD834];
+/// // 𝄞mus<invalid>ic<invalid>
+/// let v = [
+///     0xD834, 0xDD1E, 0x006d, 0x0075, 0x0073, 0xDD1E, 0x0069, 0x0063, 0xD834,
+/// ];
 ///
-///     assert_eq!(decode_utf16(v.iter().cloned())
-///                    .map(|r| r.unwrap_or(REPLACEMENT_CHARACTER))
-///                    .collect::<String>(),
-///                "𝄞mus�ic�");
-/// }
+/// assert_eq!(
+///     decode_utf16(v.iter().cloned())
+///        .map(|r| r.unwrap_or(REPLACEMENT_CHARACTER))
+///        .collect::<String>(),
+///     "𝄞mus�ic�"
+/// );
 /// ```
 #[stable(feature = "decode_utf16", since = "1.9.0")]
 #[inline]
@@ -127,7 +130,7 @@ impl DecodeUtf16Error {
 
 #[stable(feature = "decode_utf16", since = "1.9.0")]
 impl fmt::Display for DecodeUtf16Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "unpaired surrogate found: {:x}", self.code)
     }
 }

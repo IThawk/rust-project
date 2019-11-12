@@ -1,5 +1,5 @@
 use super::combine::{CombineFields, RelationDir};
-use super::{Subtype};
+use super::Subtype;
 
 use crate::hir::def_id::DefId;
 
@@ -9,25 +9,26 @@ use crate::ty::subst::SubstsRef;
 use crate::ty::relate::{self, Relate, RelateResult, TypeRelation};
 
 /// Ensures `a` is made equal to `b`. Returns `a` on success.
-pub struct Equate<'combine, 'infcx: 'combine, 'gcx: 'infcx+'tcx, 'tcx: 'infcx> {
-    fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>,
+pub struct Equate<'combine, 'infcx, 'tcx> {
+    fields: &'combine mut CombineFields<'infcx, 'tcx>,
     a_is_expected: bool,
 }
 
-impl<'combine, 'infcx, 'gcx, 'tcx> Equate<'combine, 'infcx, 'gcx, 'tcx> {
-    pub fn new(fields: &'combine mut CombineFields<'infcx, 'gcx, 'tcx>, a_is_expected: bool)
-        -> Equate<'combine, 'infcx, 'gcx, 'tcx>
-    {
+impl<'combine, 'infcx, 'tcx> Equate<'combine, 'infcx, 'tcx> {
+    pub fn new(
+        fields: &'combine mut CombineFields<'infcx, 'tcx>,
+        a_is_expected: bool,
+    ) -> Equate<'combine, 'infcx, 'tcx> {
         Equate { fields: fields, a_is_expected: a_is_expected }
     }
 }
 
-impl<'combine, 'infcx, 'gcx, 'tcx> TypeRelation<'infcx, 'gcx, 'tcx>
-    for Equate<'combine, 'infcx, 'gcx, 'tcx>
-{
+impl TypeRelation<'tcx> for Equate<'combine, 'infcx, 'tcx> {
     fn tag(&self) -> &'static str { "Equate" }
 
-    fn tcx(&self) -> TyCtxt<'infcx, 'gcx, 'tcx> { self.fields.tcx() }
+    fn tcx(&self) -> TyCtxt<'tcx> { self.fields.tcx() }
+
+    fn param_env(&self) -> ty::ParamEnv<'tcx> { self.fields.param_env }
 
     fn a_is_expected(&self) -> bool { self.a_is_expected }
 
@@ -67,7 +68,7 @@ impl<'combine, 'infcx, 'gcx, 'tcx> TypeRelation<'infcx, 'gcx, 'tcx>
 
         debug!("{}.tys: replacements ({:?}, {:?})", self.tag(), a, b);
 
-        match (&a.sty, &b.sty) {
+        match (&a.kind, &b.kind) {
             (&ty::Infer(TyVar(a_id)), &ty::Infer(TyVar(b_id))) => {
                 infcx.type_variables.borrow_mut().equate(a_id, b_id);
             }
@@ -94,10 +95,18 @@ impl<'combine, 'infcx, 'gcx, 'tcx> TypeRelation<'infcx, 'gcx, 'tcx>
                self.tag(),
                a,
                b);
-        let origin = Subtype(self.fields.trace.clone());
+        let origin = Subtype(box self.fields.trace.clone());
         self.fields.infcx.borrow_region_constraints()
                          .make_eqregion(origin, a, b);
         Ok(a)
+    }
+
+    fn consts(
+        &mut self,
+        a: &'tcx ty::Const<'tcx>,
+        b: &'tcx ty::Const<'tcx>,
+    ) -> RelateResult<'tcx, &'tcx ty::Const<'tcx>> {
+        self.fields.infcx.super_combine_consts(self, a, b)
     }
 
     fn binders<T>(&mut self, a: &ty::Binder<T>, b: &ty::Binder<T>)

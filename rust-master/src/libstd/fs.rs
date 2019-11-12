@@ -1,3 +1,5 @@
+// ignore-tidy-filelength
+
 //! Filesystem manipulation operations.
 //!
 //! This module contains basic methods to manipulate the contents of the local
@@ -9,7 +11,7 @@
 
 use crate::fmt;
 use crate::ffi::OsString;
-use crate::io::{self, SeekFrom, Seek, Read, Initializer, Write};
+use crate::io::{self, SeekFrom, Seek, Read, Initializer, Write, IoSlice, IoSliceMut};
 use crate::path::{Path, PathBuf};
 use crate::sys::fs as fs_imp;
 use crate::sys_common::{AsInnerMut, FromInner, AsInner, IntoInner};
@@ -21,7 +23,9 @@ use crate::time::SystemTime;
 /// it was opened with. Files also implement [`Seek`] to alter the logical cursor
 /// that the file contains internally.
 ///
-/// Files are automatically closed when they go out of scope.
+/// Files are automatically closed when they go out of scope.  Errors detected
+/// on closing are ignored by the implementation of `Drop`.  Use the method
+/// [`sync_all`] if these errors must be manually handled.
 ///
 /// # Examples
 ///
@@ -84,6 +88,7 @@ use crate::time::SystemTime;
 /// [`Read`]: ../io/trait.Read.html
 /// [`Write`]: ../io/trait.Write.html
 /// [`BufReader<R>`]: ../io/struct.BufReader.html
+/// [`sync_all`]: struct.File.html#method.sync_all
 #[stable(feature = "rust1", since = "1.0.0")]
 pub struct File {
     inner: fs_imp::File,
@@ -108,6 +113,9 @@ pub struct Metadata(fs_imp::FileAttr);
 /// will yield instances of [`io::Result`]`<`[`DirEntry`]`>`. Through a [`DirEntry`]
 /// information like the entry's path and possibly other metadata can be
 /// learned.
+///
+/// The order in which this iterator returns entries is platform and filesystem
+/// dependent.
 ///
 /// # Errors
 ///
@@ -391,8 +399,12 @@ impl File {
 
     /// Attempts to sync all OS-internal metadata to disk.
     ///
-    /// This function will attempt to ensure that all in-core data reaches the
+    /// This function will attempt to ensure that all in-memory data reaches the
     /// filesystem before returning.
+    ///
+    /// This can be used to handle errors that would otherwise only be caught
+    /// when the `File` is closed.  Dropping a file will ignore errors in
+    /// synchronizing this in-memory data.
     ///
     /// # Examples
     ///
@@ -459,6 +471,8 @@ impl File {
     /// # Errors
     ///
     /// This function will return an error if the file is not opened for writing.
+    /// Also, std::io::ErrorKind::InvalidInput will be returned if the desired
+    /// length would cause an overflow due to the implementation specifics.
     ///
     /// # Examples
     ///
@@ -597,7 +611,7 @@ impl IntoInner<fs_imp::File> for File {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for File {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
@@ -606,6 +620,10 @@ impl fmt::Debug for File {
 impl Read for File {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
+    }
+
+    fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+        self.inner.read_vectored(bufs)
     }
 
     #[inline]
@@ -618,6 +636,11 @@ impl Write for File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.inner.write(buf)
     }
+
+    fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+        self.inner.write_vectored(bufs)
+    }
+
     fn flush(&mut self) -> io::Result<()> { self.inner.flush() }
 }
 #[stable(feature = "rust1", since = "1.0.0")]
@@ -632,6 +655,10 @@ impl Read for &File {
         self.inner.read(buf)
     }
 
+    fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+        self.inner.read_vectored(bufs)
+    }
+
     #[inline]
     unsafe fn initializer(&self) -> Initializer {
         Initializer::nop()
@@ -642,6 +669,11 @@ impl Write for &File {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.inner.write(buf)
     }
+
+    fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+        self.inner.write_vectored(bufs)
+    }
+
     fn flush(&mut self) -> io::Result<()> { self.inner.flush() }
 }
 #[stable(feature = "rust1", since = "1.0.0")]
@@ -876,9 +908,12 @@ impl OpenOptions {
     }
 
     fn _open(&self, path: &Path) -> io::Result<File> {
-        let inner = fs_imp::File::open(path, &self.0)?;
-        Ok(File { inner })
+        fs_imp::File::open(path, &self.0).map(|inner| File { inner })
     }
+}
+
+impl AsInner<fs_imp::OpenOptions> for OpenOptions {
+    fn as_inner(&self) -> &fs_imp::OpenOptions { &self.0 }
 }
 
 impl AsInnerMut<fs_imp::OpenOptions> for OpenOptions {
@@ -1055,13 +1090,14 @@ impl Metadata {
 
     /// Returns the creation time listed in this metadata.
     ///
-    /// The returned value corresponds to the `birthtime` field of `stat` on
-    /// Unix platforms and the `ftCreationTime` field on Windows platforms.
+    /// The returned value corresponds to the `btime` field of `statx` on
+    /// Linux kernel starting from to 4.11, the `birthtime` field of `stat` on other
+    /// Unix platforms, and the `ftCreationTime` field on Windows platforms.
     ///
     /// # Errors
     ///
     /// This field may not be available on all platforms, and will return an
-    /// `Err` on platforms where it is not available.
+    /// `Err` on platforms or filesystems where it is not available.
     ///
     /// # Examples
     ///
@@ -1074,7 +1110,7 @@ impl Metadata {
     ///     if let Ok(time) = metadata.created() {
     ///         println!("{:?}", time);
     ///     } else {
-    ///         println!("Not supported on this platform");
+    ///         println!("Not supported on this platform or filesystem");
     ///     }
     ///     Ok(())
     /// }
@@ -1087,7 +1123,7 @@ impl Metadata {
 
 #[stable(feature = "std_debug", since = "1.16.0")]
 impl fmt::Debug for Metadata {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Metadata")
             .field("file_type", &self.file_type())
             .field("is_dir", &self.is_dir())
@@ -1102,6 +1138,10 @@ impl fmt::Debug for Metadata {
 
 impl AsInner<fs_imp::FileAttr> for Metadata {
     fn as_inner(&self) -> &fs_imp::FileAttr { &self.0 }
+}
+
+impl FromInner<fs_imp::FileAttr> for Metadata {
+    fn from_inner(attr: fs_imp::FileAttr) -> Metadata { Metadata(attr) }
 }
 
 impl Permissions {
@@ -1394,7 +1434,7 @@ impl DirEntry {
 
 #[stable(feature = "dir_entry_debug", since = "1.13.0")]
 impl fmt::Debug for DirEntry {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("DirEntry")
             .field(&self.path())
             .finish()
@@ -1581,8 +1621,8 @@ pub fn rename<P: AsRef<Path>, Q: AsRef<Path>>(from: P, to: Q) -> io::Result<()> 
 /// `O_CLOEXEC` is set for returned file descriptors.
 /// On Windows, this function currently corresponds to `CopyFileEx`. Alternate
 /// NTFS streams are copied but only the size of the main stream is returned by
-/// this function. On MacOS, this function corresponds to `copyfile` with
-/// `COPYFILE_ALL`.
+/// this function. On MacOS, this function corresponds to `fclonefileat` and
+/// `fcopyfile`.
 /// Note that, this [may change in the future][changes].
 ///
 /// [changes]: ../io/index.html#platform-specific-behavior
@@ -1778,6 +1818,8 @@ pub fn canonicalize<P: AsRef<Path>>(path: P) -> io::Result<PathBuf> {
 ///   function.)
 /// * `path` already exists.
 ///
+/// [`create_dir_all`]: fn.create_dir_all.html
+///
 /// # Examples
 ///
 /// ```no_run
@@ -1918,10 +1960,14 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 /// # Platform-specific behavior
 ///
 /// This function currently corresponds to the `opendir` function on Unix
-/// and the `FindFirstFile` function on Windows.
+/// and the `FindFirstFile` function on Windows. Advancing the iterator
+/// currently corresponds to `readdir` on Unix and `FindNextFile` on Windows.
 /// Note that, this [may change in the future][changes].
 ///
 /// [changes]: ../io/index.html#platform-specific-behavior
+///
+/// The order in which this iterator returns entries is platform and filesystem
+/// dependent.
 ///
 /// # Errors
 ///
@@ -1940,7 +1986,7 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 /// use std::path::Path;
 ///
 /// // one possible implementation of walking a directory only visiting files
-/// fn visit_dirs(dir: &Path, cb: &Fn(&DirEntry)) -> io::Result<()> {
+/// fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
 ///     if dir.is_dir() {
 ///         for entry in fs::read_dir(dir)? {
 ///             let entry = entry?;
@@ -1952,6 +1998,25 @@ pub fn remove_dir_all<P: AsRef<Path>>(path: P) -> io::Result<()> {
 ///             }
 ///         }
 ///     }
+///     Ok(())
+/// }
+/// ```
+///
+/// ```rust,no_run
+/// use std::{fs, io};
+///
+/// fn main() -> io::Result<()> {
+///     let mut entries = fs::read_dir(".")?
+///         .map(|res| res.map(|e| e.path()))
+///         .collect::<Result<Vec<_>, io::Error>>()?;
+///
+///     // The order in which `read_dir` returns entries is not guaranteed. If reproducible
+///     // ordering is required the entries should be explicitly sorted.
+///
+///     entries.sort();
+///
+///     // The entries have now been sorted by their path.
+///
 ///     Ok(())
 /// }
 /// ```
@@ -2095,7 +2160,7 @@ impl AsInnerMut<fs_imp::DirBuilder> for DirBuilder {
     }
 }
 
-#[cfg(all(test, not(any(target_os = "cloudabi", target_os = "emscripten"))))]
+#[cfg(all(test, not(any(target_os = "cloudabi", target_os = "emscripten", target_env = "sgx"))))]
 mod tests {
     use crate::io::prelude::*;
 
@@ -2106,7 +2171,7 @@ mod tests {
     use crate::sys_common::io::test::{TempDir, tmpdir};
     use crate::thread;
 
-    use rand::{rngs::StdRng, FromEntropy, RngCore};
+    use rand::{rngs::StdRng, RngCore, SeedableRng};
 
     #[cfg(windows)]
     use crate::os::windows::fs::{symlink_dir, symlink_file};
@@ -3048,8 +3113,10 @@ mod tests {
 
         #[cfg(windows)]
         let invalid_options = 87; // ERROR_INVALID_PARAMETER
-        #[cfg(unix)]
+        #[cfg(all(unix, not(target_os = "vxworks")))]
         let invalid_options = "Invalid argument";
+        #[cfg(target_os = "vxworks")]
+        let invalid_options = "invalid argument";
 
         // Test various combinations of creation modes and access modes.
         //
@@ -3280,11 +3347,11 @@ mod tests {
         fs::create_dir_all(&d).unwrap();
         File::create(&f).unwrap();
         if cfg!(not(windows)) {
-            symlink_dir("../d/e", &c).unwrap();
+            symlink_file("../d/e", &c).unwrap();
             symlink_file("../f", &e).unwrap();
         }
         if cfg!(windows) {
-            symlink_dir(r"..\d\e", &c).unwrap();
+            symlink_file(r"..\d\e", &c).unwrap();
             symlink_file(r"..\f", &e).unwrap();
         }
 
@@ -3376,6 +3443,19 @@ mod tests {
         if cfg!(target_os = "macos") || cfg!(target_os = "windows") {
             check!(a.created());
             check!(b.created());
+        }
+
+        if cfg!(target_os = "linux") {
+            // Not always available
+            match (a.created(), b.created()) {
+                (Ok(t1), Ok(t2)) => assert!(t1 <= t2),
+                (Err(e1), Err(e2)) if e1.kind() == ErrorKind::Other &&
+                                      e2.kind() == ErrorKind::Other => {}
+                (a, b) => panic!(
+                    "creation time must be always supported or not supported: {:?} {:?}",
+                    a, b,
+                ),
+            }
         }
     }
 }

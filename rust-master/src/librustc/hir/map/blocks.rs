@@ -15,7 +15,7 @@ use crate::hir as ast;
 use crate::hir::map;
 use crate::hir::{Expr, FnDecl, Node};
 use crate::hir::intravisit::FnKind;
-use syntax::ast::{Attribute, Ident, NodeId};
+use syntax::ast::{Attribute, Ident};
 use syntax_pos::Span;
 
 /// An FnLikeNode is a Node that is like a fn, in that it has a decl
@@ -37,19 +37,25 @@ trait MaybeFnLike { fn is_fn_like(&self) -> bool; }
 
 impl MaybeFnLike for ast::Item {
     fn is_fn_like(&self) -> bool {
-        match self.node { ast::ItemKind::Fn(..) => true, _ => false, }
+        match self.kind {
+            ast::ItemKind::Fn(..) => true,
+            _ => false,
+        }
     }
 }
 
 impl MaybeFnLike for ast::ImplItem {
     fn is_fn_like(&self) -> bool {
-        match self.node { ast::ImplItemKind::Method(..) => true, _ => false, }
+        match self.kind {
+            ast::ImplItemKind::Method(..) => true,
+            _ => false,
+        }
     }
 }
 
 impl MaybeFnLike for ast::TraitItem {
     fn is_fn_like(&self) -> bool {
-        match self.node {
+        match self.kind {
             ast::TraitItemKind::Method(_, ast::TraitMethod::Provided(_)) => true,
             _ => false,
         }
@@ -58,7 +64,7 @@ impl MaybeFnLike for ast::TraitItem {
 
 impl MaybeFnLike for ast::Expr {
     fn is_fn_like(&self) -> bool {
-        match self.node {
+        match self.kind {
             ast::ExprKind::Closure(..) => true,
             _ => false,
         }
@@ -83,7 +89,7 @@ impl<'a> Code<'a> {
     }
 
     /// Attempts to construct a Code from presumed FnLike or Expr node input.
-    pub fn from_node(map: &map::Map<'a>, id: NodeId) -> Option<Code<'a>> {
+    pub fn from_node(map: &map::Map<'a>, id: ast::HirId) -> Option<Code<'a>> {
         match map.get(id) {
             map::Node::Block(_) => {
                 //  Use the parent, hopefully an expression node.
@@ -175,27 +181,15 @@ impl<'a> FnLikeNode<'a> {
     }
 
     pub fn constness(self) -> ast::Constness {
-        match self.kind() {
-            FnKind::ItemFn(_, _, header, ..) => header.constness,
-            FnKind::Method(_, m, ..) => m.header.constness,
-            _ => ast::Constness::NotConst
-        }
+        self.kind().header().map_or(ast::Constness::NotConst, |header| header.constness)
     }
 
     pub fn asyncness(self) -> ast::IsAsync {
-        match self.kind() {
-            FnKind::ItemFn(_, _, header, ..) => header.asyncness,
-            FnKind::Method(_, m, ..) => m.header.asyncness,
-            _ => ast::IsAsync::NotAsync
-        }
+        self.kind().header().map_or(ast::IsAsync::NotAsync, |header| header.asyncness)
     }
 
     pub fn unsafety(self) -> ast::Unsafety {
-        match self.kind() {
-            FnKind::ItemFn(_, _, header, ..) => header.unsafety,
-            FnKind::Method(_, m, ..) => m.header.unsafety,
-            _ => ast::Unsafety::Normal
-        }
+        self.kind().header().map_or(ast::Unsafety::Normal, |header| header.unsafety)
     }
 
     pub fn kind(self) -> FnKind<'a> {
@@ -224,7 +218,7 @@ impl<'a> FnLikeNode<'a> {
         C: FnOnce(ClosureParts<'a>) -> A,
     {
         match self.node {
-            map::Node::Item(i) => match i.node {
+            map::Node::Item(i) => match i.kind {
                 ast::ItemKind::Fn(ref decl, header, ref generics, block) =>
                     item_fn(ItemFnParts {
                         id: i.hir_id,
@@ -239,21 +233,21 @@ impl<'a> FnLikeNode<'a> {
                     }),
                 _ => bug!("item FnLikeNode that is not fn-like"),
             },
-            map::Node::TraitItem(ti) => match ti.node {
+            map::Node::TraitItem(ti) => match ti.kind {
                 ast::TraitItemKind::Method(ref sig, ast::TraitMethod::Provided(body)) => {
                     method(ti.hir_id, ti.ident, sig, None, body, ti.span, &ti.attrs)
                 }
                 _ => bug!("trait method FnLikeNode that is not fn-like"),
             },
             map::Node::ImplItem(ii) => {
-                match ii.node {
+                match ii.kind {
                     ast::ImplItemKind::Method(ref sig, body) => {
                         method(ii.hir_id, ii.ident, sig, Some(&ii.vis), body, ii.span, &ii.attrs)
                     }
                     _ => bug!("impl method FnLikeNode that is not fn-like")
                 }
             },
-            map::Node::Expr(e) => match e.node {
+            map::Node::Expr(e) => match e.kind {
                 ast::ExprKind::Closure(_, ref decl, block, _fn_decl_span, _gen) =>
                     closure(ClosureParts::new(&decl, block, e.hir_id, e.span, &e.attrs)),
                 _ => bug!("expr FnLikeNode that is not fn-like"),

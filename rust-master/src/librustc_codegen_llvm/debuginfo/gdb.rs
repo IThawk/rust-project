@@ -9,6 +9,7 @@ use rustc::session::config::DebugInfo;
 use rustc_codegen_ssa::traits::*;
 
 use syntax::attr;
+use syntax::symbol::sym;
 
 
 /// Inserts a side-effect free instruction sequence that makes sure that the
@@ -36,7 +37,7 @@ pub fn get_or_insert_gdb_debug_scripts_section_global(cx: &CodegenCx<'ll, '_>)
 
     let section_var = unsafe {
         llvm::LLVMGetNamedGlobal(cx.llmod,
-                                 c_section_var_name.as_ptr() as *const _)
+                                 c_section_var_name.as_ptr().cast())
     };
 
     section_var.unwrap_or_else(|| {
@@ -51,7 +52,7 @@ pub fn get_or_insert_gdb_debug_scripts_section_global(cx: &CodegenCx<'ll, '_>)
                                                      llvm_type).unwrap_or_else(||{
                 bug!("symbol `{}` is already defined", section_var_name)
             });
-            llvm::LLVMSetSection(section_var, section_name.as_ptr() as *const _);
+            llvm::LLVMSetSection(section_var, section_name.as_ptr().cast());
             llvm::LLVMSetInitializer(section_var, cx.const_bytes(section_contents));
             llvm::LLVMSetGlobalConstant(section_var, llvm::True);
             llvm::LLVMSetUnnamedAddr(section_var, llvm::True);
@@ -66,8 +67,7 @@ pub fn get_or_insert_gdb_debug_scripts_section_global(cx: &CodegenCx<'ll, '_>)
 
 pub fn needs_gdb_debug_scripts_section(cx: &CodegenCx<'_, '_>) -> bool {
     let omit_gdb_pretty_printer_section =
-        attr::contains_name(&cx.tcx.hir().krate_attrs(),
-                            "omit_gdb_pretty_printer_section");
+        attr::contains_name(&cx.tcx.hir().krate_attrs(), sym::omit_gdb_pretty_printer_section);
 
     !omit_gdb_pretty_printer_section &&
     cx.sess().opts.debuginfo != DebugInfo::None &&

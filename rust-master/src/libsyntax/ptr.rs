@@ -31,21 +31,20 @@ use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 use std::{slice, vec};
 
-use serialize::{Encodable, Decodable, Encoder, Decoder};
+use rustc_serialize::{Encodable, Decodable, Encoder, Decoder};
 
-use rustc_data_structures::stable_hasher::{StableHasher, StableHasherResult,
-                                           HashStable};
+use rustc_data_structures::stable_hasher::{StableHasher, HashStable};
 /// An owned smart pointer.
 #[derive(Hash, PartialEq, Eq)]
 pub struct P<T: ?Sized> {
     ptr: Box<T>
 }
 
-#[allow(non_snake_case)]
 /// Construct a `P<T>` from a `T` value.
+#[allow(non_snake_case)]
 pub fn P<T: 'static>(value: T) -> P<T> {
     P {
-        ptr: Box::new(value)
+        ptr: box value
     }
 }
 
@@ -57,7 +56,8 @@ impl<T: 'static> P<T> {
     {
         f(*self.ptr)
     }
-    /// Equivalent to and_then(|x| x)
+
+    /// Equivalent to `and_then(|x| x)`.
     pub fn into_inner(self) -> T {
         *self.ptr
     }
@@ -132,8 +132,15 @@ impl<T: Encodable> Encodable for P<T> {
 }
 
 impl<T> P<[T]> {
-    pub fn new() -> P<[T]> {
-        P { ptr: Default::default() }
+    pub const fn new() -> P<[T]> {
+        // HACK(eddyb) bypass the lack of a `const fn` to create an empty `Box<[T]>`
+        // (as trait methods, `default` in this case, can't be `const fn` yet).
+        P {
+            ptr: unsafe {
+                use std::ptr::NonNull;
+                std::mem::transmute(NonNull::<[T; 0]>::dangling() as NonNull<[T]>)
+            },
+        }
     }
 
     #[inline(never)]
@@ -210,9 +217,7 @@ impl<T: Decodable> Decodable for P<[T]> {
 impl<CTX, T> HashStable<CTX> for P<T>
     where T: ?Sized + HashStable<CTX>
 {
-    fn hash_stable<W: StableHasherResult>(&self,
-                                          hcx: &mut CTX,
-                                          hasher: &mut StableHasher<W>) {
+    fn hash_stable(&self, hcx: &mut CTX, hasher: &mut StableHasher) {
         (**self).hash_stable(hcx, hasher);
     }
 }

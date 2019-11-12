@@ -1,4 +1,4 @@
-use crate::indexed_vec::{Idx, IndexVec};
+use rustc_index::vec::{Idx, IndexVec};
 
 pub fn iter<Ls>(
     first: Option<Ls::LinkIndex>,
@@ -8,7 +8,7 @@ where
     Ls: Links,
 {
     VecLinkedListIterator {
-        links: links,
+        links,
         current: first,
     }
 }
