@@ -23,12 +23,12 @@ use rustc::mir::interpret::truncate;
 
 use std::mem;
 
-impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
+impl<'a, 'tcx> Builder<'a, 'tcx> {
     pub fn simplify_candidate<'pat>(&mut self,
                                     candidate: &mut Candidate<'pat, 'tcx>) {
         // repeatedly simplify match pairs until fixed point is reached
         loop {
-            let match_pairs = mem::replace(&mut candidate.match_pairs, vec![]);
+            let match_pairs = mem::take(&mut candidate.match_pairs);
             let mut changed = false;
             for match_pair in match_pairs {
                 match self.simplify_match_pair(match_pair, candidate) {
@@ -57,7 +57,7 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                                  -> Result<(), MatchPair<'pat, 'tcx>> {
         let tcx = self.hir.tcx();
         match *match_pair.pattern.kind {
-            PatternKind::AscribeUserType {
+            PatKind::AscribeUserType {
                 ref subpattern,
                 ascription: hair::pattern::Ascription {
                     variance,
@@ -79,12 +79,12 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 Ok(())
             }
 
-            PatternKind::Wild => {
+            PatKind::Wild => {
                 // nothing left to do
                 Ok(())
             }
 
-            PatternKind::Binding { name, mutability, mode, var, ty, ref subpattern } => {
+            PatKind::Binding { name, mutability, mode, var, ty, ref subpattern } => {
                 candidate.bindings.push(Binding {
                     name,
                     mutability,
@@ -103,13 +103,13 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 Ok(())
             }
 
-            PatternKind::Constant { .. } => {
+            PatKind::Constant { .. } => {
                 // FIXME normalize patterns when possible
                 Err(match_pair)
             }
 
-            PatternKind::Range(PatternRange { lo, hi, ty, end }) => {
-                let (range, bias) = match ty.sty {
+            PatKind::Range(PatRange { lo, hi, end }) => {
+                let (range, bias) = match lo.ty.kind {
                     ty::Char => {
                         (Some(('\u{0000}' as u128, '\u{10FFFF}' as u128, Size::from_bits(32))), 0)
                     }
@@ -144,7 +144,7 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 Err(match_pair)
             }
 
-            PatternKind::Slice { ref prefix, ref slice, ref suffix } => {
+            PatKind::Slice { ref prefix, ref slice, ref suffix } => {
                 if prefix.is_empty() && slice.is_some() && suffix.is_empty() {
                     // irrefutable
                     self.prefix_slice_suffix(&mut candidate.match_pairs,
@@ -158,12 +158,11 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 }
             }
 
-            PatternKind::Variant { adt_def, substs, variant_index, ref subpatterns } => {
+            PatKind::Variant { adt_def, substs, variant_index, ref subpatterns } => {
                 let irrefutable = adt_def.variants.iter_enumerated().all(|(i, v)| {
                     i == variant_index || {
-                        self.hir.tcx().features().never_type &&
                         self.hir.tcx().features().exhaustive_patterns &&
-                        self.hir.tcx().is_variant_uninhabited_from_all_modules(v, substs)
+                        !v.uninhabited_from(self.hir.tcx(), substs, adt_def.adt_kind()).is_empty()
                     }
                 });
                 if irrefutable {
@@ -175,7 +174,7 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 }
             }
 
-            PatternKind::Array { ref prefix, ref slice, ref suffix } => {
+            PatKind::Array { ref prefix, ref slice, ref suffix } => {
                 self.prefix_slice_suffix(&mut candidate.match_pairs,
                                          &match_pair.place,
                                          prefix,
@@ -184,17 +183,21 @@ impl<'a, 'gcx, 'tcx> Builder<'a, 'gcx, 'tcx> {
                 Ok(())
             }
 
-            PatternKind::Leaf { ref subpatterns } => {
+            PatKind::Leaf { ref subpatterns } => {
                 // tuple struct, match subpats (if any)
                 candidate.match_pairs
                          .extend(self.field_match_pairs(match_pair.place, subpatterns));
                 Ok(())
             }
 
-            PatternKind::Deref { ref subpattern } => {
+            PatKind::Deref { ref subpattern } => {
                 let place = match_pair.place.deref();
                 candidate.match_pairs.push(MatchPair::new(place, subpattern));
                 Ok(())
+            }
+
+            PatKind::Or { .. } => {
+                Err(match_pair)
             }
         }
     }

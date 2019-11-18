@@ -15,7 +15,7 @@ use super::fs::*;
 use super::file_format;
 use super::work_product;
 
-pub fn dep_graph_tcx_init<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>) {
+pub fn dep_graph_tcx_init(tcx: TyCtxt<'_>) {
     if !tcx.dep_graph.is_fully_enabled() {
         return
     }
@@ -101,6 +101,7 @@ pub fn load_dep_graph(sess: &Session) -> DepGraphFuture {
     // before we fire the background thread.
 
     let time_passes = sess.time_passes();
+    let prof = sess.prof.clone();
 
     if sess.opts.incremental.is_none() {
         // No incremental compilation.
@@ -160,7 +161,9 @@ pub fn load_dep_graph(sess: &Session) -> DepGraphFuture {
     }
 
     MaybeAsync::Async(std::thread::spawn(move || {
-        time_ext(time_passes, None, "background load prev dep-graph", move || {
+        time_ext(time_passes, "background load prev dep-graph", move || {
+            let _prof_timer = prof.generic_activity("incr_comp_load_dep_graph");
+
             match load_data(report_incremental_info, &path) {
                 LoadResult::DataOutOfDate => LoadResult::DataOutOfDate,
                 LoadResult::Error { message } => LoadResult::Error { message },
@@ -192,11 +195,13 @@ pub fn load_dep_graph(sess: &Session) -> DepGraphFuture {
     }))
 }
 
-pub fn load_query_result_cache<'sess>(sess: &'sess Session) -> OnDiskCache<'sess> {
+pub fn load_query_result_cache(sess: &Session) -> OnDiskCache<'_> {
     if sess.opts.incremental.is_none() ||
        !sess.opts.debugging_opts.incremental_queries {
         return OnDiskCache::new_empty(sess.source_map());
     }
+
+    let _prof_timer = sess.prof.generic_activity("incr_comp_load_query_result_cache");
 
     match load_data(sess.opts.debugging_opts.incremental_info, &query_cache_path(sess)) {
         LoadResult::Ok{ data: (bytes, start_pos) } => OnDiskCache::new(sess, bytes, start_pos),

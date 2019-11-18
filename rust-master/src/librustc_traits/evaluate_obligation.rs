@@ -14,13 +14,15 @@ crate fn provide(p: &mut Providers<'_>) {
 }
 
 fn evaluate_obligation<'tcx>(
-    tcx: TyCtxt<'_, 'tcx, 'tcx>,
+    tcx: TyCtxt<'tcx>,
     canonical_goal: CanonicalPredicateGoal<'tcx>,
 ) -> Result<EvaluationResult, OverflowError> {
+    debug!("evaluate_obligation(canonical_goal={:#?})", canonical_goal);
     tcx.infer_ctxt().enter_with_canonical(
         DUMMY_SP,
         &canonical_goal,
         |ref infcx, goal, _canonical_inference_vars| {
+            debug!("evaluate_obligation: goal={:#?}", goal);
             let ParamEnvAnd {
                 param_env,
                 value: predicate,
@@ -29,7 +31,7 @@ fn evaluate_obligation<'tcx>(
             let mut selcx = SelectionContext::with_query_mode(&infcx, TraitQueryMode::Canonical);
             let obligation = Obligation::new(ObligationCause::dummy(), param_env, predicate);
 
-            selcx.evaluate_obligation_recursively(&obligation)
+            selcx.evaluate_root_obligation(&obligation)
         },
     )
 }

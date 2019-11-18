@@ -1,9 +1,10 @@
 //! Character conversions.
 
-use convert::TryFrom;
-use fmt;
-use mem::transmute;
-use str::FromStr;
+use crate::convert::TryFrom;
+use crate::fmt;
+use crate::mem::transmute;
+use crate::str::FromStr;
+
 use super::MAX;
 
 /// Converts a `u32` to a `char`.
@@ -110,11 +111,9 @@ impl From<char> for u32 {
     /// ```
     /// use std::mem;
     ///
-    /// fn main() {
-    ///     let c = 'c';
-    ///     let u = u32::from(c);
-    ///     assert!(4 == mem::size_of_val(&u))
-    /// }
+    /// let c = 'c';
+    /// let u = u32::from(c);
+    /// assert!(4 == mem::size_of_val(&u))
     /// ```
     #[inline]
     fn from(c: char) -> Self {
@@ -122,7 +121,7 @@ impl From<char> for u32 {
     }
 }
 
-/// Maps a byte in 0x00...0xFF to a `char` whose code point has the same value, in U+0000 to U+00FF.
+/// Maps a byte in 0x00..=0xFF to a `char` whose code point has the same value, in U+0000..=U+00FF.
 ///
 /// Unicode is designed such that this effectively decodes bytes
 /// with the character encoding that IANA calls ISO-8859-1.
@@ -149,11 +148,9 @@ impl From<u8> for char {
     /// ```
     /// use std::mem;
     ///
-    /// fn main() {
-    ///     let u = 32 as u8;
-    ///     let c = char::from(u);
-    ///     assert!(4 == mem::size_of_val(&c))
-    /// }
+    /// let u = 32 as u8;
+    /// let c = char::from(u);
+    /// assert!(4 == mem::size_of_val(&c))
     /// ```
     #[inline]
     fn from(i: u8) -> Self {
@@ -192,7 +189,7 @@ enum CharErrorKind {
 
 #[stable(feature = "char_from_str", since = "1.20.0")]
 impl fmt::Display for ParseCharError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.__description().fmt(f)
     }
 }
@@ -239,7 +236,7 @@ pub struct CharTryFromError(());
 
 #[stable(feature = "try_from", since = "1.34.0")]
 impl fmt::Display for CharTryFromError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         "converted integer out of range for `char`".fmt(f)
     }
 }
@@ -315,4 +312,3 @@ pub fn from_digit(num: u32, radix: u32) -> Option<char> {
         None
     }
 }
-

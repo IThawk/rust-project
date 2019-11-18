@@ -1,6 +1,6 @@
 //! This module defines types which are thread safe if cfg!(parallel_compiler) is true.
 //!
-//! `Lrc` is an alias of either Rc or Arc.
+//! `Lrc` is an alias of `Arc` if cfg!(parallel_compiler) is true, `Rc` otherwise.
 //!
 //! `Lock` is a mutex.
 //! It internally uses `parking_lot::Mutex` if cfg!(parallel_compiler) is true,
@@ -12,7 +12,7 @@
 //!
 //! `MTLock` is a mutex which disappears if cfg!(parallel_compiler) is false.
 //!
-//! `MTRef` is a immutable reference if cfg!(parallel_compiler), and an mutable reference otherwise.
+//! `MTRef` is an immutable reference if cfg!(parallel_compiler), and a mutable reference otherwise.
 //!
 //! `rustc_erase_owner!` erases a OwningRef owner into Erased or Erased + Send + Sync
 //! depending on the value of cfg!(parallel_compiler).
@@ -22,29 +22,6 @@ use std::hash::{Hash, BuildHasher};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use crate::owning_ref::{Erased, OwningRef};
-
-pub fn serial_join<A, B, RA, RB>(oper_a: A, oper_b: B) -> (RA, RB)
-    where A: FnOnce() -> RA,
-          B: FnOnce() -> RB
-{
-    (oper_a(), oper_b())
-}
-
-pub struct SerialScope;
-
-impl SerialScope {
-    pub fn spawn<F>(&self, f: F)
-        where F: FnOnce(&SerialScope)
-    {
-        f(self)
-    }
-}
-
-pub fn serial_scope<F, R>(f: F) -> R
-    where F: FnOnce(&SerialScope) -> R
-{
-    f(&SerialScope)
-}
 
 pub use std::sync::atomic::Ordering::SeqCst;
 pub use std::sync::atomic::Ordering;
@@ -67,6 +44,51 @@ cfg_if! {
         use std::ops::Add;
         use std::panic::{resume_unwind, catch_unwind, AssertUnwindSafe};
 
+        /// This is a single threaded variant of AtomicCell provided by crossbeam.
+        /// Unlike `Atomic` this is intended for all `Copy` types,
+        /// but it lacks the explicit ordering arguments.
+        #[derive(Debug)]
+        pub struct AtomicCell<T: Copy>(Cell<T>);
+
+        impl<T: Copy> AtomicCell<T> {
+            #[inline]
+            pub fn new(v: T) -> Self {
+                AtomicCell(Cell::new(v))
+            }
+
+            #[inline]
+            pub fn get_mut(&mut self) -> &mut T {
+                self.0.get_mut()
+            }
+        }
+
+        impl<T: Copy> AtomicCell<T> {
+            #[inline]
+            pub fn into_inner(self) -> T {
+                self.0.into_inner()
+            }
+
+            #[inline]
+            pub fn load(&self) -> T {
+                self.0.get()
+            }
+
+            #[inline]
+            pub fn store(&self, val: T) {
+                self.0.set(val)
+            }
+
+            #[inline]
+            pub fn swap(&self, val: T) -> T {
+                self.0.replace(val)
+            }
+        }
+
+        /// This is a single threaded variant of `AtomicU64`, `AtomicUsize`, etc.
+        /// It differs from `AtomicCell` in that it has explicit ordering arguments
+        /// and is only intended for use with the native atomic types.
+        /// You should use this type through the `AtomicU64`, `AtomicUsize`, etc, type aliases
+        /// as it's not intended to be used separately.
         #[derive(Debug)]
         pub struct Atomic<T: Copy>(Cell<T>);
 
@@ -77,7 +99,8 @@ cfg_if! {
             }
         }
 
-        impl<T: Copy + PartialEq> Atomic<T> {
+        impl<T: Copy> Atomic<T> {
+            #[inline]
             pub fn into_inner(self) -> T {
                 self.0.into_inner()
             }
@@ -92,10 +115,14 @@ cfg_if! {
                 self.0.set(val)
             }
 
+            #[inline]
             pub fn swap(&self, val: T, _: Ordering) -> T {
                 self.0.replace(val)
             }
+        }
 
+        impl<T: Copy + PartialEq> Atomic<T> {
+            #[inline]
             pub fn compare_exchange(&self,
                                     current: T,
                                     new: T,
@@ -113,6 +140,7 @@ cfg_if! {
         }
 
         impl<T: Add<Output=T> + Copy> Atomic<T> {
+            #[inline]
             pub fn fetch_add(&self, val: T, _: Ordering) -> T {
                 let old = self.0.get();
                 self.0.set(old + val);
@@ -125,8 +153,28 @@ cfg_if! {
         pub type AtomicU32 = Atomic<u32>;
         pub type AtomicU64 = Atomic<u64>;
 
-        pub use self::serial_join as join;
-        pub use self::serial_scope as scope;
+        pub fn join<A, B, RA, RB>(oper_a: A, oper_b: B) -> (RA, RB)
+            where A: FnOnce() -> RA,
+                  B: FnOnce() -> RB
+        {
+            (oper_a(), oper_b())
+        }
+
+        pub struct SerialScope;
+
+        impl SerialScope {
+            pub fn spawn<F>(&self, f: F)
+                where F: FnOnce(&SerialScope)
+            {
+                f(self)
+            }
+        }
+
+        pub fn scope<F, R>(f: F) -> R
+            where F: FnOnce(&SerialScope) -> R
+        {
+            f(&SerialScope)
+        }
 
         #[macro_export]
         macro_rules! parallel {
@@ -270,6 +318,8 @@ cfg_if! {
         pub use parking_lot::MappedMutexGuard as MappedLockGuard;
 
         pub use std::sync::atomic::{AtomicBool, AtomicUsize, AtomicU32, AtomicU64};
+
+        pub use crossbeam_utils::atomic::AtomicCell;
 
         pub use std::sync::Arc as Lrc;
         pub use std::sync::Weak as Weak;

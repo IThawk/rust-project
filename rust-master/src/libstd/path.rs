@@ -1,3 +1,5 @@
+// ignore-tidy-filelength
+
 //! Cross-platform path manipulation.
 //!
 //! This module provides two types, [`PathBuf`] and [`Path`][`Path`] (akin to [`String`]
@@ -315,7 +317,7 @@ unsafe fn u8_slice_as_os_str(s: &[u8]) -> &OsStr {
 
 // Detect scheme on Redox
 fn has_redox_scheme(s: &[u8]) -> bool {
-    cfg!(target_os = "redox") && s.split(|b| *b == b'/').next().unwrap_or(b"").contains(&b':')
+    cfg!(target_os = "redox") && s.contains(&b':')
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -323,7 +325,7 @@ fn has_redox_scheme(s: &[u8]) -> bool {
 ////////////////////////////////////////////////////////////////////////////////
 
 /// Says whether the first byte after the prefix is a separator.
-fn has_physical_root(s: &[u8], prefix: Option<Prefix>) -> bool {
+fn has_physical_root(s: &[u8], prefix: Option<Prefix<'_>>) -> bool {
     let path = if let Some(p) = prefix {
         &s[p.len()..]
     } else {
@@ -630,11 +632,11 @@ pub struct Iter<'a> {
 
 #[stable(feature = "path_components_debug", since = "1.13.0")]
 impl fmt::Debug for Components<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         struct DebugHelper<'a>(&'a Path);
 
         impl fmt::Debug for DebugHelper<'_> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_list()
                     .entries(self.0.components())
                     .finish()
@@ -828,11 +830,11 @@ impl AsRef<OsStr> for Components<'_> {
 
 #[stable(feature = "path_iter_debug", since = "1.13.0")]
 impl fmt::Debug for Iter<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         struct DebugHelper<'a>(&'a Path);
 
         impl fmt::Debug for DebugHelper<'_> {
-            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_list()
                     .entries(self.0.iter())
                     .finish()
@@ -1121,6 +1123,12 @@ impl FusedIterator for Ancestors<'_> {}
 /// Which method works best depends on what kind of situation you're in.
 #[derive(Clone)]
 #[stable(feature = "rust1", since = "1.0.0")]
+// FIXME:
+// `PathBuf::as_mut_vec` current implementation relies
+// on `PathBuf` being layout-compatible with `Vec<u8>`.
+// When attribute privacy is implemented, `PathBuf` should be annotated as `#[repr(transparent)]`.
+// Anyway, `PathBuf` representation and layout are considered implementation detail, are
+// not documented and must not be relied upon.
 pub struct PathBuf {
     inner: OsString,
 }
@@ -1551,15 +1559,13 @@ impl<P: AsRef<Path>> iter::FromIterator<P> for PathBuf {
 #[stable(feature = "rust1", since = "1.0.0")]
 impl<P: AsRef<Path>> iter::Extend<P> for PathBuf {
     fn extend<I: IntoIterator<Item = P>>(&mut self, iter: I) {
-        for p in iter {
-            self.push(p.as_ref())
-        }
+        iter.into_iter().for_each(move |p| self.push(p.as_ref()));
     }
 }
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for PathBuf {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&**self, formatter)
     }
 }
@@ -1621,7 +1627,7 @@ impl<'a> From<Cow<'a, Path>> for PathBuf {
 
 #[stable(feature = "shared_from_slice2", since = "1.24.0")]
 impl From<PathBuf> for Arc<Path> {
-    /// Converts a Path into a Rc by copying the Path data into a new Rc buffer.
+    /// Converts a `PathBuf` into an `Arc` by moving the `PathBuf` data into a new `Arc` buffer.
     #[inline]
     fn from(s: PathBuf) -> Arc<Path> {
         let arc: Arc<OsStr> = Arc::from(s.into_os_string());
@@ -1631,7 +1637,7 @@ impl From<PathBuf> for Arc<Path> {
 
 #[stable(feature = "shared_from_slice2", since = "1.24.0")]
 impl From<&Path> for Arc<Path> {
-    /// Converts a Path into a Rc by copying the Path data into a new Rc buffer.
+    /// Converts a `Path` into an `Arc` by copying the `Path` data into a new `Arc` buffer.
     #[inline]
     fn from(s: &Path) -> Arc<Path> {
         let arc: Arc<OsStr> = Arc::from(s.as_os_str());
@@ -1641,7 +1647,7 @@ impl From<&Path> for Arc<Path> {
 
 #[stable(feature = "shared_from_slice2", since = "1.24.0")]
 impl From<PathBuf> for Rc<Path> {
-    /// Converts a Path into a Rc by copying the Path data into a new Rc buffer.
+    /// Converts a `PathBuf` into an `Rc` by moving the `PathBuf` data into a new `Rc` buffer.
     #[inline]
     fn from(s: PathBuf) -> Rc<Path> {
         let rc: Rc<OsStr> = Rc::from(s.into_os_string());
@@ -1651,7 +1657,7 @@ impl From<PathBuf> for Rc<Path> {
 
 #[stable(feature = "shared_from_slice2", since = "1.24.0")]
 impl From<&Path> for Rc<Path> {
-    /// Converts a Path into a Rc by copying the Path data into a new Rc buffer.
+    /// Converts a `Path` into an `Rc` by copying the `Path` data into a new `Rc` buffer.
     #[inline]
     fn from(s: &Path) -> Rc<Path> {
         let rc: Rc<OsStr> = Rc::from(s.as_os_str());
@@ -1745,6 +1751,12 @@ impl AsRef<OsStr> for PathBuf {
 /// assert_eq!(extension, Some(OsStr::new("txt")));
 /// ```
 #[stable(feature = "rust1", since = "1.0.0")]
+// FIXME:
+// `Path::new` current implementation relies
+// on `Path` being layout-compatible with `OsStr`.
+// When attribute privacy is implemented, `Path` should be annotated as `#[repr(transparent)]`.
+// Anyway, `Path` representation and layout are considered implementation detail, are
+// not documented and must not be relied upon.
 pub struct Path {
     inner: OsStr,
 }
@@ -1819,6 +1831,8 @@ impl Path {
     /// Yields a [`&str`] slice if the `Path` is valid unicode.
     ///
     /// This conversion may entail doing a check for UTF-8 validity.
+    /// Note that validation is performed because non-UTF-8 strings are
+    /// perfectly valid for some OS.
     ///
     /// [`&str`]: ../primitive.str.html
     ///
@@ -1857,7 +1871,7 @@ impl Path {
     /// Had `path` contained invalid unicode, the `to_string_lossy` call might
     /// have returned `"fo�.txt"`.
     #[stable(feature = "rust1", since = "1.0.0")]
-    pub fn to_string_lossy(&self) -> Cow<str> {
+    pub fn to_string_lossy(&self) -> Cow<'_, str> {
         self.inner.to_string_lossy()
     }
 
@@ -1926,7 +1940,7 @@ impl Path {
         !self.is_absolute()
     }
 
-    fn prefix(&self) -> Option<Prefix> {
+    fn prefix(&self) -> Option<Prefix<'_>> {
         self.components().prefix
     }
 
@@ -2007,7 +2021,7 @@ impl Path {
     /// [`None`]: ../../std/option/enum.Option.html#variant.None
     /// [`parent`]: struct.Path.html#method.parent
     #[stable(feature = "path_ancestors", since = "1.28.0")]
-    pub fn ancestors(&self) -> Ancestors {
+    pub fn ancestors(&self) -> Ancestors<'_> {
         Ancestors {
             next: Some(&self),
         }
@@ -2205,6 +2219,7 @@ impl Path {
     /// assert_eq!(Path::new("/etc").join("passwd"), PathBuf::from("/etc/passwd"));
     /// ```
     #[stable(feature = "rust1", since = "1.0.0")]
+    #[must_use]
     pub fn join<P: AsRef<Path>>(&self, path: P) -> PathBuf {
         self._join(path.as_ref())
     }
@@ -2305,7 +2320,7 @@ impl Path {
     /// [`Component`]: enum.Component.html
     /// [`CurDir`]: enum.Component.html#variant.CurDir
     #[stable(feature = "rust1", since = "1.0.0")]
-    pub fn components(&self) -> Components {
+    pub fn components(&self) -> Components<'_> {
         let prefix = parse_prefix(self.as_os_str());
         Components {
             path: self.as_u8_slice(),
@@ -2339,7 +2354,7 @@ impl Path {
     /// assert_eq!(it.next(), None)
     /// ```
     #[stable(feature = "rust1", since = "1.0.0")]
-    pub fn iter(&self) -> Iter {
+    pub fn iter(&self) -> Iter<'_> {
         Iter { inner: self.components() }
     }
 
@@ -2358,7 +2373,7 @@ impl Path {
     /// println!("{}", path.display());
     /// ```
     #[stable(feature = "rust1", since = "1.0.0")]
-    pub fn display(&self) -> Display {
+    pub fn display(&self) -> Display<'_> {
         Display { path: self }
     }
 
@@ -2578,7 +2593,7 @@ impl AsRef<OsStr> for Path {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for Path {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.inner, formatter)
     }
 }
@@ -2610,14 +2625,14 @@ pub struct Display<'a> {
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Debug for Display<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(&self.path, f)
     }
 }
 
 #[stable(feature = "rust1", since = "1.0.0")]
 impl fmt::Display for Display<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.path.inner.display(f)
     }
 }
@@ -2805,7 +2820,7 @@ impl_cmp_os_str!(Cow<'a, Path>, OsString);
 
 #[stable(since = "1.7.0", feature = "strip_prefix")]
 impl fmt::Display for StripPrefixError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.description().fmt(f)
     }
 }
@@ -2915,7 +2930,7 @@ mod tests {
 
         {
             let path: &Path = &pathbuf;
-            let borrowed_cow_path: Cow<Path> = path.into();
+            let borrowed_cow_path: Cow<'_, Path> = path.into();
 
             assert_eq!(static_cow_path, borrowed_cow_path);
         }
@@ -3801,7 +3816,7 @@ mod tests {
             });
         );
 
-        if cfg!(unix) {
+        if cfg!(unix) || cfg!(all(target_env = "sgx", target_vendor = "fortanix")) {
             tp!("", "foo", "foo");
             tp!("foo", "bar", "foo/bar");
             tp!("foo/", "bar", "foo/bar");
@@ -3960,7 +3975,7 @@ mod tests {
         tfn!("foo", "bar", "bar");
         tfn!("foo", "", "");
         tfn!("", "foo", "foo");
-        if cfg!(unix) {
+        if cfg!(unix) || cfg!(all(target_env = "sgx", target_vendor = "fortanix")) {
             tfn!(".", "foo", "./foo");
             tfn!("foo/", "bar", "bar");
             tfn!("foo/.", "bar", "bar");
@@ -4013,8 +4028,8 @@ mod tests {
         let mut owned: PathBuf = PathBuf::new();
         owned.push("foo");
         owned.push("bar");
-        let borrowed_cow: Cow<Path> = borrowed.into();
-        let owned_cow: Cow<Path> = owned.clone().into();
+        let borrowed_cow: Cow<'_, Path> = borrowed.into();
+        let owned_cow: Cow<'_, Path> = owned.clone().into();
 
         macro_rules! t {
             ($($current:expr),+) => {

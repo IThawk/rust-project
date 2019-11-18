@@ -6,12 +6,11 @@
 
 use crate::attributes;
 use crate::llvm;
-use crate::monomorphize::Instance;
 use crate::context::CodegenCx;
 use crate::value::Value;
 use rustc_codegen_ssa::traits::*;
 
-use rustc::ty::TypeFoldable;
+use rustc::ty::{TypeFoldable, Instance};
 use rustc::ty::layout::{LayoutOf, HasTyCtxt};
 
 /// Codegens a reference to a fn/method item, monomorphizing and
@@ -34,11 +33,11 @@ pub fn get_fn(
     assert!(!instance.substs.has_param_types());
 
     let sig = instance.fn_sig(cx.tcx());
-    if let Some(&llfn) = cx.instances().borrow().get(&instance) {
+    if let Some(&llfn) = cx.instances.borrow().get(&instance) {
         return llfn;
     }
 
-    let sym = tcx.symbol_name(instance).as_str();
+    let sym = tcx.symbol_name(instance).name.as_str();
     debug!("get_fn({:?}: {:?}) => {}", instance, sig, sym);
 
     // Create a fn pointer with the substituted signature.

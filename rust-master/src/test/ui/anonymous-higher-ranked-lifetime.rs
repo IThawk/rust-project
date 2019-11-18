@@ -1,26 +1,15 @@
 fn main() {
     f1(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     f2(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     f3(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     f4(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     f5(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     g1(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     g2(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     g3(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     g4(|_: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     h1(|_: (), _: (), _: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
     h2(|_: (), _: (), _: (), _: ()| {}); //~ ERROR type mismatch
-    //~^ ERROR type mismatch
 }
 
 // Basic
@@ -31,11 +20,11 @@ fn f4<F>(_: F) where F: for<'r> Fn(&(), &'r ()) {}
 fn f5<F>(_: F) where F: for<'r> Fn(&'r (), &'r ()) {}
 
 // Nested
-fn g1<F>(_: F) where F: Fn(&(), Box<Fn(&())>) {}
+fn g1<F>(_: F) where F: Fn(&(), Box<dyn Fn(&())>) {}
 fn g2<F>(_: F) where F: Fn(&(), fn(&())) {}
-fn g3<F>(_: F) where F: for<'s> Fn(&'s (), Box<Fn(&())>) {}
+fn g3<F>(_: F) where F: for<'s> Fn(&'s (), Box<dyn Fn(&())>) {}
 fn g4<F>(_: F) where F: Fn(&(), for<'r> fn(&'r ())) {}
 
 // Mixed
-fn h1<F>(_: F) where F: Fn(&(), Box<Fn(&())>, &(), fn(&(), &())) {}
-fn h2<F>(_: F) where F: for<'t0> Fn(&(), Box<Fn(&())>, &'t0 (), fn(&(), &())) {}
+fn h1<F>(_: F) where F: Fn(&(), Box<dyn Fn(&())>, &(), fn(&(), &())) {}
+fn h2<F>(_: F) where F: for<'t0> Fn(&(), Box<dyn Fn(&())>, &'t0 (), fn(&(), &())) {}

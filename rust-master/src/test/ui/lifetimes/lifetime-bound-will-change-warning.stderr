@@ -6,10 +6,10 @@ LL |     ref_obj(x)
    |
    = note: expected type `&std::boxed::Box<(dyn std::ops::Fn() + 'static)>`
               found type `&std::boxed::Box<(dyn std::ops::Fn() + 'a)>`
-note: the lifetime 'a as defined on the function body at 32:10...
+note: the lifetime `'a` as defined on the function body at 32:10...
   --> $DIR/lifetime-bound-will-change-warning.rs:32:10
    |
-LL | fn test2<'a>(x: &'a Box<Fn()+'a>) {
+LL | fn test2<'a>(x: &'a Box<dyn Fn() + 'a>) {
    |          ^^
    = note: ...does not necessarily outlive the static lifetime
 
@@ -21,10 +21,10 @@ LL |     lib::ref_obj(x)
    |
    = note: expected type `&std::boxed::Box<(dyn std::ops::Fn() + 'static)>`
               found type `&std::boxed::Box<(dyn std::ops::Fn() + 'a)>`
-note: the lifetime 'a as defined on the function body at 37:12...
+note: the lifetime `'a` as defined on the function body at 37:12...
   --> $DIR/lifetime-bound-will-change-warning.rs:37:12
    |
-LL | fn test2cc<'a>(x: &'a Box<Fn()+'a>) {
+LL | fn test2cc<'a>(x: &'a Box<dyn Fn() + 'a>) {
    |            ^^
    = note: ...does not necessarily outlive the static lifetime
 

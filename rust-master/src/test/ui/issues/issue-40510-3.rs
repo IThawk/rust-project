@@ -1,4 +1,3 @@
-// compile-pass
 #![allow(unused)]
 
 fn f() {
@@ -8,8 +7,8 @@ fn f() {
         || {
             x.push(())
         }
+        //~^^^ ERROR captured variable cannot escape `FnMut` closure body
     };
 }
-
 
 fn main() {}

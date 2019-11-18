@@ -3,10 +3,10 @@ use crate::check::regionck::RegionCtxt;
 use crate::hir;
 use crate::hir::def_id::DefId;
 use rustc::infer::outlives::env::OutlivesEnvironment;
-use rustc::infer::{self, InferOk, SuppressRegionErrors};
+use rustc::infer::{InferOk, SuppressRegionErrors};
 use rustc::middle::region;
 use rustc::traits::{ObligationCause, TraitEngine, TraitEngineExt};
-use rustc::ty::subst::{Subst, SubstsRef, UnpackedKind};
+use rustc::ty::subst::{Subst, SubstsRef};
 use rustc::ty::{self, Ty, TyCtxt};
 use crate::util::common::ErrorReported;
 
@@ -29,13 +29,10 @@ use syntax_pos::Span;
 ///    struct/enum definition for the nominal type itself (i.e.
 ///    cannot do `struct S<T>; impl<T:Clone> Drop for S<T> { ... }`).
 ///
-pub fn check_drop_impl<'a, 'tcx>(
-    tcx: TyCtxt<'a, 'tcx, 'tcx>,
-    drop_impl_did: DefId,
-) -> Result<(), ErrorReported> {
+pub fn check_drop_impl(tcx: TyCtxt<'_>, drop_impl_did: DefId) -> Result<(), ErrorReported> {
     let dtor_self_type = tcx.type_of(drop_impl_did);
     let dtor_predicates = tcx.predicates_of(drop_impl_did);
-    match dtor_self_type.sty {
+    match dtor_self_type.kind {
         ty::Adt(adt_def, self_to_impl_substs) => {
             ensure_drop_params_and_item_params_correspond(
                 tcx,
@@ -47,7 +44,7 @@ pub fn check_drop_impl<'a, 'tcx>(
             ensure_drop_predicates_are_implied_by_item_defn(
                 tcx,
                 drop_impl_did,
-                &dtor_predicates,
+                dtor_predicates,
                 adt_def.did,
                 self_to_impl_substs,
             )
@@ -64,8 +61,8 @@ pub fn check_drop_impl<'a, 'tcx>(
     }
 }
 
-fn ensure_drop_params_and_item_params_correspond<'a, 'tcx>(
-    tcx: TyCtxt<'a, 'tcx, 'tcx>,
+fn ensure_drop_params_and_item_params_correspond<'tcx>(
+    tcx: TyCtxt<'tcx>,
     drop_impl_did: DefId,
     drop_impl_ty: Ty<'tcx>,
     self_type_did: DefId,
@@ -140,10 +137,10 @@ fn ensure_drop_params_and_item_params_correspond<'a, 'tcx>(
 
 /// Confirms that every predicate imposed by dtor_predicates is
 /// implied by assuming the predicates attached to self_type_did.
-fn ensure_drop_predicates_are_implied_by_item_defn<'a, 'tcx>(
-    tcx: TyCtxt<'a, 'tcx, 'tcx>,
+fn ensure_drop_predicates_are_implied_by_item_defn<'tcx>(
+    tcx: TyCtxt<'tcx>,
     drop_impl_did: DefId,
-    dtor_predicates: &ty::GenericPredicates<'tcx>,
+    dtor_predicates: ty::GenericPredicates<'tcx>,
     self_type_did: DefId,
     self_to_impl_substs: SubstsRef<'tcx>,
 ) -> Result<(), ErrorReported> {
@@ -202,7 +199,7 @@ fn ensure_drop_predicates_are_implied_by_item_defn<'a, 'tcx>(
     // just to look for all the predicates directly.
 
     assert_eq!(dtor_predicates.parent, None);
-    for (predicate, _) in &dtor_predicates.predicates {
+    for (predicate, _) in dtor_predicates.predicates {
         // (We do not need to worry about deep analysis of type
         // expressions etc because the Drop impls are already forced
         // to take on a structure that is roughly an alpha-renaming of
@@ -216,7 +213,7 @@ fn ensure_drop_predicates_are_implied_by_item_defn<'a, 'tcx>(
         // repeated `contains` calls.
 
         if !assumptions_in_impl_context.contains(&predicate) {
-            let item_span = tcx.hir().span_by_hir_id(self_type_hir_id);
+            let item_span = tcx.hir().span(self_type_hir_id);
             struct_span_err!(
                 tcx.sess,
                 drop_impl_span,
@@ -236,87 +233,21 @@ fn ensure_drop_predicates_are_implied_by_item_defn<'a, 'tcx>(
     result
 }
 
-/// This function confirms that the type
-/// expression `typ` conforms to the "Drop Check Rule" from the Sound
-/// Generic Drop RFC (#769).
-///
-/// ----
-///
-/// The simplified (*) Drop Check Rule is the following:
-///
-/// Let `v` be some value (either temporary or named) and 'a be some
-/// lifetime (scope). If the type of `v` owns data of type `D`, where
-///
-/// * (1.) `D` has a lifetime- or type-parametric Drop implementation,
-///        (where that `Drop` implementation does not opt-out of
-///         this check via the `unsafe_destructor_blind_to_params`
-///         attribute), and
-/// * (2.) the structure of `D` can reach a reference of type `&'a _`,
-///
-/// then 'a must strictly outlive the scope of v.
-///
-/// ----
-///
-/// This function is meant to by applied to the type for every
-/// expression in the program.
-///
-/// ----
-///
-/// (*) The qualifier "simplified" is attached to the above
-/// definition of the Drop Check Rule, because it is a simplification
-/// of the original Drop Check rule, which attempted to prove that
-/// some `Drop` implementations could not possibly access data even if
-/// it was technically reachable, due to parametricity.
-///
-/// However, (1.) parametricity on its own turned out to be a
-/// necessary but insufficient condition, and (2.)  future changes to
-/// the language are expected to make it impossible to ensure that a
-/// `Drop` implementation is actually parametric with respect to any
-/// particular type parameter. (In particular, impl specialization is
-/// expected to break the needed parametricity property beyond
-/// repair.)
-///
-/// Therefore, we have scaled back Drop-Check to a more conservative
-/// rule that does not attempt to deduce whether a `Drop`
-/// implementation could not possible access data of a given lifetime;
-/// instead Drop-Check now simply assumes that if a destructor has
-/// access (direct or indirect) to a lifetime parameter, then that
-/// lifetime must be forced to outlive that destructor's dynamic
-/// extent. We then provide the `unsafe_destructor_blind_to_params`
-/// attribute as a way for destructor implementations to opt-out of
-/// this conservative assumption (and thus assume the obligation of
-/// ensuring that they do not access data nor invoke methods of
-/// values that have been previously dropped).
-pub fn check_safety_of_destructor_if_necessary<'a, 'gcx, 'tcx>(
-    rcx: &mut RegionCtxt<'a, 'gcx, 'tcx>,
+/// This function is not only checking that the dropck obligations are met for
+/// the given type, but it's also currently preventing non-regular recursion in
+/// types from causing stack overflows (dropck_no_diverge_on_nonregular_*.rs).
+crate fn check_drop_obligations<'a, 'tcx>(
+    rcx: &mut RegionCtxt<'a, 'tcx>,
     ty: Ty<'tcx>,
     span: Span,
     body_id: hir::HirId,
-    scope: region::Scope,
 ) -> Result<(), ErrorReported> {
-    debug!("check_safety_of_destructor_if_necessary typ: {:?} scope: {:?}",
-           ty, scope);
+    debug!("check_drop_obligations typ: {:?}", ty);
 
-    let parent_scope = match rcx.region_scope_tree.opt_encl_scope(scope) {
-        Some(parent_scope) => parent_scope,
-        // If no enclosing scope, then it must be the root scope
-        // which cannot be outlived.
-        None => return Ok(()),
-    };
-    let parent_scope = rcx.tcx.mk_region(ty::ReScope(parent_scope));
-    let origin = || infer::SubregionOrigin::SafeDestructor(span);
     let cause = &ObligationCause::misc(span, body_id);
     let infer_ok = rcx.infcx.at(cause, rcx.fcx.param_env).dropck_outlives(ty);
     debug!("dropck_outlives = {:#?}", infer_ok);
-    let kinds = rcx.fcx.register_infer_ok_obligations(infer_ok);
-    for kind in kinds {
-        match kind.unpack() {
-            UnpackedKind::Lifetime(r) => rcx.sub_regions(origin(), parent_scope, r),
-            UnpackedKind::Type(ty) => rcx.type_must_outlive(origin(), ty, parent_scope),
-            UnpackedKind::Const(_) => {
-                // Generic consts don't add constraints.
-            }
-        }
-    }
+    rcx.fcx.register_infer_ok_obligations(infer_ok);
+
     Ok(())
 }

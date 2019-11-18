@@ -32,30 +32,6 @@ impl DynamicLibrary {
         }
     }
 
-    /// Loads a dynamic library into the global namespace (RTLD_GLOBAL on Unix)
-    /// and do it now (don't use RTLD_LAZY on Unix).
-    pub fn open_global_now(filename: &Path) -> Result<DynamicLibrary, String> {
-        let maybe_library = dl::open_global_now(filename.as_os_str());
-        match maybe_library {
-            Err(err) => Err(err),
-            Ok(handle) => Ok(DynamicLibrary { handle })
-        }
-    }
-
-    /// Returns the environment variable for this process's dynamic library
-    /// search path
-    pub fn envvar() -> &'static str {
-        if cfg!(windows) {
-            "PATH"
-        } else if cfg!(target_os = "macos") {
-            "DYLD_LIBRARY_PATH"
-        } else if cfg!(target_os = "haiku") {
-            "LIBRARY_PATH"
-        } else {
-            "LD_LIBRARY_PATH"
-        }
-    }
-
     /// Accesses the value at the symbol of the dynamic library.
     pub unsafe fn symbol<T>(&self, symbol: &str) -> Result<*mut T, String> {
         // This function should have a lifetime constraint of 'a on
@@ -74,55 +50,7 @@ impl DynamicLibrary {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::mem;
-
-    #[test]
-    fn test_loading_atoi() {
-        if cfg!(windows) {
-            return
-        }
-
-        // The C library does not need to be loaded since it is already linked in
-        let lib = match DynamicLibrary::open(None) {
-            Err(error) => panic!("Could not load self as module: {}", error),
-            Ok(lib) => lib
-        };
-
-        let atoi: extern fn(*const libc::c_char) -> libc::c_int = unsafe {
-            match lib.symbol("atoi") {
-                Err(error) => panic!("Could not load function atoi: {}", error),
-                Ok(atoi) => mem::transmute::<*mut u8, _>(atoi)
-            }
-        };
-
-        let argument = CString::new("1383428980").unwrap();
-        let expected_result = 0x52757374;
-        let result = atoi(argument.as_ptr());
-        if result != expected_result {
-            panic!("atoi({:?}) != {} but equaled {} instead", argument,
-                   expected_result, result)
-        }
-    }
-
-    #[test]
-    fn test_errors_do_not_crash() {
-        use std::path::Path;
-
-        if !cfg!(unix) {
-            return
-        }
-
-        // Open /dev/null as a library to get an error, and make sure
-        // that only causes an error, and not a crash.
-        let path = Path::new("/dev/null");
-        match DynamicLibrary::open(Some(&path)) {
-            Err(_) => {}
-            Ok(_) => panic!("Successfully opened the empty library.")
-        }
-    }
-}
+mod tests;
 
 #[cfg(unix)]
 mod dl {
@@ -131,7 +59,7 @@ mod dl {
     use std::ptr;
     use std::str;
 
-    pub fn open(filename: Option<&OsStr>) -> Result<*mut u8, String> {
+    pub(super) fn open(filename: Option<&OsStr>) -> Result<*mut u8, String> {
         check_for_errors_in(|| {
             unsafe {
                 match filename {
@@ -139,13 +67,6 @@ mod dl {
                     None => open_internal(),
                 }
             }
-        })
-    }
-
-    pub fn open_global_now(filename: &OsStr) -> Result<*mut u8, String> {
-        check_for_errors_in(|| unsafe {
-            let s = CString::new(filename.as_bytes()).unwrap();
-            libc::dlopen(s.as_ptr(), libc::RTLD_GLOBAL | libc::RTLD_NOW) as *mut u8
         })
     }
 
@@ -158,12 +79,12 @@ mod dl {
         libc::dlopen(ptr::null(), libc::RTLD_LAZY) as *mut u8
     }
 
-    pub fn check_for_errors_in<T, F>(f: F) -> Result<T, String> where
-        F: FnOnce() -> T,
+    fn check_for_errors_in<T, F>(f: F) -> Result<T, String>
+        where F: FnOnce() -> T,
     {
-        use std::sync::{Mutex, Once, ONCE_INIT};
-        static INIT: Once = ONCE_INIT;
-        static mut LOCK: *mut Mutex<()> = 0 as *mut _;
+        use std::sync::{Mutex, Once};
+        static INIT: Once = Once::new();
+        static mut LOCK: *mut Mutex<()> = ptr::null_mut();
         unsafe {
             INIT.call_once(|| {
                 LOCK = Box::into_raw(Box::new(Mutex::new(())));
@@ -187,14 +108,15 @@ mod dl {
         }
     }
 
-    pub unsafe fn symbol(handle: *mut u8,
-                         symbol: *const libc::c_char)
-                         -> Result<*mut u8, String> {
+    pub(super) unsafe fn symbol(
+        handle: *mut u8,
+        symbol: *const libc::c_char,
+    ) -> Result<*mut u8, String> {
         check_for_errors_in(|| {
             libc::dlsym(handle as *mut libc::c_void, symbol) as *mut u8
         })
     }
-    pub unsafe fn close(handle: *mut u8) {
+    pub(super) unsafe fn close(handle: *mut u8) {
         libc::dlclose(handle as *mut libc::c_void); ()
     }
 }
@@ -226,11 +148,7 @@ mod dl {
         fn FreeLibrary(handle: HMODULE) -> BOOL;
     }
 
-    pub fn open_global_now(filename: &OsStr) -> Result<*mut u8, String> {
-        open(Some(filename))
-    }
-
-    pub fn open(filename: Option<&OsStr>) -> Result<*mut u8, String> {
+    pub(super) fn open(filename: Option<&OsStr>) -> Result<*mut u8, String> {
         // disable "dll load failed" error dialog.
         let prev_error_mode = unsafe {
             // SEM_FAILCRITICALERRORS 0x01
@@ -273,14 +191,15 @@ mod dl {
         result
     }
 
-    pub unsafe fn symbol(handle: *mut u8,
-                         symbol: *const c_char)
-                         -> Result<*mut u8, String> {
+    pub(super) unsafe fn symbol(
+        handle: *mut u8,
+        symbol: *const c_char,
+    ) -> Result<*mut u8, String> {
         let ptr = GetProcAddress(handle as HMODULE, symbol) as *mut u8;
         ptr_result(ptr)
     }
 
-    pub unsafe fn close(handle: *mut u8) {
+    pub(super) unsafe fn close(handle: *mut u8) {
         FreeLibrary(handle as HMODULE);
     }
 

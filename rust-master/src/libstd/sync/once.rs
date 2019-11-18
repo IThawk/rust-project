@@ -60,10 +60,9 @@ use crate::thread::{self, Thread};
 
 /// A synchronization primitive which can be used to run a one-time global
 /// initialization. Useful for one-time initialization for FFI or related
-/// functionality. This type can only be constructed with the [`ONCE_INIT`]
-/// value or the equivalent [`Once::new`] constructor.
+/// functionality. This type can only be constructed with the [`Once::new`]
+/// constructor.
 ///
-/// [`ONCE_INIT`]: constant.ONCE_INIT.html
 /// [`Once::new`]: struct.Once.html#method.new
 ///
 /// # Examples
@@ -115,6 +114,11 @@ pub struct OnceState {
 /// static START: Once = ONCE_INIT;
 /// ```
 #[stable(feature = "rust1", since = "1.0.0")]
+#[rustc_deprecated(
+    since = "1.38.0",
+    reason = "the `new` function is now preferred",
+    suggestion = "Once::new()",
+)]
 pub const ONCE_INIT: Once = Once::new();
 
 // Four states that a Once can be in, encoded into the lower bits of `state` in
@@ -431,7 +435,7 @@ impl Once {
 
 #[stable(feature = "std_debug", since = "1.16.0")]
 impl fmt::Debug for Once {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.pad("Once { .. }")
     }
 }

@@ -14,15 +14,17 @@ impl<'tcx> RegionConstraintCollector<'tcx> {
     /// retain the older (arguably incorrect) behavior of the
     /// compiler.
     ///
-    /// NB. The use of snapshot here is mostly an efficiency thing --
-    /// we could search *all* region constraints, but that'd be a
-    /// bigger set and the data structures are not setup for that. If
+    /// NB. Although `_snapshot` isn't used, it's passed in to prove
+    /// that we are in a snapshot, which guarantees that we can just
+    /// search the "undo log" for edges. This is mostly an efficiency
+    /// thing -- we could search *all* region constraints, but that'd be
+    /// a bigger set and the data structures are not setup for that. If
     /// we wind up keeping some form of this check long term, it would
     /// probably be better to remove the snapshot parameter and to
     /// refactor the constraint set.
     pub fn leak_check(
         &mut self,
-        tcx: TyCtxt<'_, '_, 'tcx>,
+        tcx: TyCtxt<'tcx>,
         overly_polymorphic: bool,
         placeholder_map: &PlaceholderMap<'tcx>,
         _snapshot: &CombinedSnapshot<'_, 'tcx>,
@@ -78,10 +80,10 @@ impl<'tcx> RegionConstraintCollector<'tcx> {
                 }
 
                 return Err(if overly_polymorphic {
-                    debug!("Overly polymorphic!");
+                    debug!("overly polymorphic!");
                     TypeError::RegionsOverlyPolymorphic(placeholder.name, tainted_region)
                 } else {
-                    debug!("Not as polymorphic!");
+                    debug!("not as polymorphic!");
                     TypeError::RegionsInsufficientlyPolymorphic(placeholder.name, tainted_region)
                 });
             }
@@ -109,7 +111,7 @@ impl<'tcx> TaintSet<'tcx> {
 
     fn fixed_point(
         &mut self,
-        tcx: TyCtxt<'_, '_, 'tcx>,
+        tcx: TyCtxt<'tcx>,
         undo_log: &[UndoLog<'tcx>],
         verifys: &[Verify<'tcx>],
     ) {

@@ -2,7 +2,7 @@ error[E0401]: can't use generic parameters from outer function
   --> $DIR/E0401.rs:4:39
    |
 LL | fn foo<T>(x: T) {
-   |        - type variable from outer function
+   |        - type parameter from outer function
 LL |     fn bfnr<U, V: Baz<U>, W: Fn()>(y: T) {
    |        ---------------------------    ^ use of generic parameter from outer function
    |        |
@@ -12,7 +12,7 @@ error[E0401]: can't use generic parameters from outer function
   --> $DIR/E0401.rs:9:16
    |
 LL | fn foo<T>(x: T) {
-   |        - type variable from outer function
+   |        - type parameter from outer function
 ...
 LL |     fn baz<U,
    |        --- try adding a local generic parameter in this method instead
@@ -32,6 +32,13 @@ LL |         fn helper(sel: &Self) -> u8 {
    |                         use of generic parameter from outer function
    |                         use a type here instead
 
-error: aborting due to 3 previous errors
+error[E0282]: type annotations needed
+  --> $DIR/E0401.rs:11:5
+   |
+LL |     bfnr(x);
+   |     ^^^^ cannot infer type for `U`
 
-For more information about this error, try `rustc --explain E0401`.
+error: aborting due to 4 previous errors
+
+Some errors have detailed explanations: E0282, E0401.
+For more information about an error, try `rustc --explain E0282`.

@@ -2,17 +2,17 @@ error[E0392]: parameter `'a` is never used
   --> $DIR/variance-regions-unused-indirect.rs:3:10
    |
 LL | enum Foo<'a> {
-   |          ^^ unused type parameter
+   |          ^^ unused parameter
    |
-   = help: consider removing `'a` or using a marker such as `std::marker::PhantomData`
+   = help: consider removing `'a`, referring to it in a field, or using a marker such as `std::marker::PhantomData`
 
 error[E0392]: parameter `'a` is never used
   --> $DIR/variance-regions-unused-indirect.rs:7:10
    |
 LL | enum Bar<'a> {
-   |          ^^ unused type parameter
+   |          ^^ unused parameter
    |
-   = help: consider removing `'a` or using a marker such as `std::marker::PhantomData`
+   = help: consider removing `'a`, referring to it in a field, or using a marker such as `std::marker::PhantomData`
 
 error: aborting due to 2 previous errors
 

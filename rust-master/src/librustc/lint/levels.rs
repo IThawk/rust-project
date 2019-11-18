@@ -8,13 +8,13 @@ use crate::lint::{self, Lint, LintId, Level, LintSource};
 use crate::session::Session;
 use crate::util::nodemap::FxHashMap;
 use errors::{Applicability, DiagnosticBuilder};
-use rustc_data_structures::stable_hasher::{HashStable, ToStableHashKey,
-                                           StableHasher, StableHasherResult};
+use rustc_data_structures::stable_hasher::{HashStable, ToStableHashKey, StableHasher};
 use syntax::ast;
 use syntax::attr;
 use syntax::feature_gate;
+use syntax::print::pprust;
 use syntax::source_map::MultiSpan;
-use syntax::symbol::Symbol;
+use syntax::symbol::{Symbol, sym};
 
 pub struct LintLevelSets {
     list: Vec<LintSet>,
@@ -191,10 +191,10 @@ impl<'a> LintLevelsBuilder<'a> {
         let store = self.sess.lint_store.borrow();
         let sess = self.sess;
         let bad_attr = |span| {
-            struct_span_err!(sess, span, E0452, "malformed lint attribute")
+            struct_span_err!(sess, span, E0452, "malformed lint attribute input")
         };
         for attr in attrs {
-            let level = match attr.ident_str().and_then(|name| Level::from_str(name)) {
+            let level = match Level::from_symbol(attr.name_or_empty()) {
                 None => continue,
                 Some(lvl) => lvl,
             };
@@ -218,19 +218,19 @@ impl<'a> LintLevelsBuilder<'a> {
             let mut reason = None;
             let tail_li = &metas[metas.len()-1];
             if let Some(item) = tail_li.meta_item() {
-                match item.node {
+                match item.kind {
                     ast::MetaItemKind::Word => {}  // actual lint names handled later
                     ast::MetaItemKind::NameValue(ref name_value) => {
-                        if item.path == "reason" {
+                        if item.path == sym::reason {
                             // found reason, reslice meta list to exclude it
                             metas = &metas[0..metas.len()-1];
                             // FIXME (#55112): issue unused-attributes lint if we thereby
                             // don't have any lint names (`#[level(reason = "foo")]`)
-                            if let ast::LitKind::Str(rationale, _) = name_value.node {
+                            if let ast::LitKind::Str(rationale, _) = name_value.kind {
                                 if !self.sess.features_untracked().lint_reasons {
                                     feature_gate::emit_feature_err(
                                         &self.sess.parse_sess,
-                                        "lint_reasons",
+                                        sym::lint_reasons,
                                         item.span,
                                         feature_gate::GateIssue::Language,
                                         "lint reasons are experimental"
@@ -238,18 +238,20 @@ impl<'a> LintLevelsBuilder<'a> {
                                 }
                                 reason = Some(rationale);
                             } else {
-                                let mut err = bad_attr(name_value.span);
-                                err.help("reason must be a string literal");
-                                err.emit();
+                                bad_attr(name_value.span)
+                                    .span_label(name_value.span, "reason must be a string literal")
+                                    .emit();
                             }
                         } else {
-                            let mut err = bad_attr(item.span);
-                            err.emit();
+                            bad_attr(item.span)
+                                .span_label(item.span, "bad attribute argument")
+                                .emit();
                         }
                     },
                     ast::MetaItemKind::List(_) => {
-                        let mut err = bad_attr(item.span);
-                        err.emit();
+                        bad_attr(item.span)
+                            .span_label(item.span, "bad attribute argument")
+                            .emit();
                     }
                 }
             }
@@ -258,13 +260,19 @@ impl<'a> LintLevelsBuilder<'a> {
                 let meta_item = match li.meta_item() {
                     Some(meta_item) if meta_item.is_word() => meta_item,
                     _ => {
-                        let mut err = bad_attr(li.span());
+                        let sp = li.span();
+                        let mut err = bad_attr(sp);
+                        let mut add_label = true;
                         if let Some(item) = li.meta_item() {
-                            if let ast::MetaItemKind::NameValue(_) = item.node {
-                                if item.path == "reason" {
-                                    err.help("reason in lint attribute must come last");
+                            if let ast::MetaItemKind::NameValue(_) = item.kind {
+                                if item.path == sym::reason {
+                                    err.span_label(sp, "reason in lint attribute must come last");
+                                    add_label = false;
                                 }
                             }
+                        }
+                        if add_label {
+                            err.span_label(sp, "bad attribute argument");
                         }
                         err.emit();
                         continue;
@@ -278,12 +286,12 @@ impl<'a> LintLevelsBuilder<'a> {
                             tool_ident.span,
                             E0710,
                             "an unknown tool name found in scoped lint: `{}`",
-                            meta_item.path
+                            pprust::path_to_string(&meta_item.path),
                         );
                         continue;
                     }
 
-                    Some(tool_ident.as_str())
+                    Some(tool_ident.name)
                 } else {
                     None
                 };
@@ -318,15 +326,14 @@ impl<'a> LintLevelsBuilder<'a> {
                                      Also `cfg_attr(cargo-clippy)` won't be necessary anymore",
                                     name
                                 );
-                                let mut err = lint::struct_lint_level(
+                                lint::struct_lint_level(
                                     self.sess,
                                     lint,
                                     lvl,
                                     src,
                                     Some(li.span().into()),
                                     &msg,
-                                );
-                                err.span_suggestion(
+                                ).span_suggestion(
                                     li.span(),
                                     "change it to",
                                     new_lint_name.to_string(),
@@ -519,9 +526,7 @@ impl LintLevelMap {
 
 impl<'a> HashStable<StableHashingContext<'a>> for LintLevelMap {
     #[inline]
-    fn hash_stable<W: StableHasherResult>(&self,
-                                          hcx: &mut StableHashingContext<'a>,
-                                          hasher: &mut StableHasher<W>) {
+    fn hash_stable(&self, hcx: &mut StableHashingContext<'a>, hasher: &mut StableHasher) {
         let LintLevelMap {
             ref sets,
             ref id_to_set,
@@ -560,9 +565,7 @@ impl<'a> HashStable<StableHashingContext<'a>> for LintLevelMap {
 
 impl<HCX> HashStable<HCX> for LintId {
     #[inline]
-    fn hash_stable<W: StableHasherResult>(&self,
-                                          hcx: &mut HCX,
-                                          hasher: &mut StableHasher<W>) {
+    fn hash_stable(&self, hcx: &mut HCX, hasher: &mut StableHasher) {
         self.lint_name_raw().hash_stable(hcx, hasher);
     }
 }

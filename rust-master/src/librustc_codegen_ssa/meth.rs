@@ -1,10 +1,8 @@
 use rustc_target::abi::call::FnType;
-use rustc_mir::monomorphize;
 
-use crate::callee;
 use crate::traits::*;
 
-use rustc::ty::{self, Ty};
+use rustc::ty::{self, Ty, Instance};
 
 #[derive(Copy, Clone, Debug)]
 pub struct VirtualIndex(u64);
@@ -13,7 +11,7 @@ pub const DESTRUCTOR: VirtualIndex = VirtualIndex(0);
 pub const SIZE: VirtualIndex = VirtualIndex(1);
 pub const ALIGN: VirtualIndex = VirtualIndex(2);
 
-impl<'a, 'tcx: 'a> VirtualIndex {
+impl<'a, 'tcx> VirtualIndex {
     pub fn from_index(index: usize) -> Self {
         VirtualIndex(index as u64 + 3)
     }
@@ -93,7 +91,14 @@ pub fn get_vtable<'tcx, Cx: CodegenMethods<'tcx>>(
 
     let methods = methods.cloned().map(|opt_mth| {
         opt_mth.map_or(nullptr, |(def_id, substs)| {
-            callee::resolve_and_get_fn_for_vtable(cx, def_id, substs)
+            cx.get_fn_addr(
+                ty::Instance::resolve_for_vtable(
+                    cx.tcx(),
+                    ty::ParamEnv::reveal_all(),
+                    def_id,
+                    substs,
+                ).unwrap()
+            )
         })
     });
 
@@ -103,7 +108,7 @@ pub fn get_vtable<'tcx, Cx: CodegenMethods<'tcx>>(
     // `get_vtable` in rust_mir/interpret/traits.rs
     // /////////////////////////////////////////////////////////////////////////////////////////////
     let components: Vec<_> = [
-        cx.get_fn(monomorphize::resolve_drop_in_place(cx.tcx(), ty)),
+        cx.get_fn_addr(Instance::resolve_drop_in_place(cx.tcx(), ty)),
         cx.const_usize(layout.size.bytes()),
         cx.const_usize(layout.align.abi.bytes())
     ].iter().cloned().chain(methods).collect();

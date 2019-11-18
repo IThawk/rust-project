@@ -1,32 +1,66 @@
 /// The expansion from a test function to the appropriate test struct for libtest
 /// Ideally, this code would be in libtest but for efficiency and error messages it lives here.
 
-use syntax::ext::base::*;
-use syntax::ext::build::AstBuilder;
-use syntax::ext::hygiene::{self, Mark, SyntaxContext};
-use syntax::attr;
+use crate::util::check_builtin_macro_attribute;
+
 use syntax::ast;
+use syntax::attr;
+use syntax_expand::base::*;
 use syntax::print::pprust;
-use syntax::symbol::Symbol;
-use syntax_pos::{DUMMY_SP, Span};
-use syntax::source_map::{ExpnInfo, MacroAttribute};
+use syntax::source_map::respan;
+use syntax::symbol::{Symbol, sym};
+use syntax_pos::Span;
+
 use std::iter;
+
+// #[test_case] is used by custom test authors to mark tests
+// When building for test, it needs to make the item public and gensym the name
+// Otherwise, we'll omit the item. This behavior means that any item annotated
+// with #[test_case] is never addressable.
+//
+// We mark item with an inert attribute "rustc_test_marker" which the test generation
+// logic will pick up on.
+pub fn expand_test_case(
+    ecx: &mut ExtCtxt<'_>,
+    attr_sp: Span,
+    meta_item: &ast::MetaItem,
+    anno_item: Annotatable
+) -> Vec<Annotatable> {
+    check_builtin_macro_attribute(ecx, meta_item, sym::test_case);
+
+    if !ecx.ecfg.should_test { return vec![]; }
+
+    let sp = ecx.with_def_site_ctxt(attr_sp);
+    let mut item = anno_item.expect_item();
+    item = item.map(|mut item| {
+        item.vis = respan(item.vis.span, ast::VisibilityKind::Public);
+        item.ident.span = item.ident.span.with_ctxt(sp.ctxt());
+        item.attrs.push(
+            ecx.attribute(ecx.meta_word(sp, sym::rustc_test_marker))
+        );
+        item
+    });
+
+    return vec![Annotatable::Item(item)]
+}
 
 pub fn expand_test(
     cx: &mut ExtCtxt<'_>,
     attr_sp: Span,
-    _meta_item: &ast::MetaItem,
+    meta_item: &ast::MetaItem,
     item: Annotatable,
 ) -> Vec<Annotatable> {
+    check_builtin_macro_attribute(cx, meta_item, sym::test);
     expand_test_or_bench(cx, attr_sp, item, false)
 }
 
 pub fn expand_bench(
     cx: &mut ExtCtxt<'_>,
     attr_sp: Span,
-    _meta_item: &ast::MetaItem,
+    meta_item: &ast::MetaItem,
     item: Annotatable,
 ) -> Vec<Annotatable> {
+    check_builtin_macro_attribute(cx, meta_item, sym::bench);
     expand_test_or_bench(cx, attr_sp, item, true)
 }
 
@@ -43,12 +77,12 @@ pub fn expand_test_or_bench(
         if let Annotatable::Item(i) = item { i }
         else {
             cx.parse_sess.span_diagnostic.span_fatal(item.span(),
-                "#[test] attribute is only allowed on non associated functions").raise();
+                "`#[test]` attribute is only allowed on non associated functions").raise();
         };
 
-    if let ast::ItemKind::Mac(_) = item.node {
+    if let ast::ItemKind::Mac(_) = item.kind {
         cx.parse_sess.span_diagnostic.span_warn(item.span,
-            "#[test] attribute should not be used on macros. Use #[cfg(test)] instead.");
+            "`#[test]` attribute should not be used on macros. Use `#[cfg(test)]` instead.");
         return vec![Annotatable::Item(item)];
     }
 
@@ -60,43 +94,31 @@ pub fn expand_test_or_bench(
         return vec![Annotatable::Item(item)];
     }
 
-    let (sp, attr_sp) = {
-        let mark = Mark::fresh(Mark::root());
-        mark.set_expn_info(ExpnInfo {
-            call_site: DUMMY_SP,
-            def_site: None,
-            format: MacroAttribute(Symbol::intern("test")),
-            allow_internal_unstable: Some(vec![
-                Symbol::intern("rustc_attrs"),
-                Symbol::intern("test"),
-            ].into()),
-            allow_internal_unsafe: false,
-            local_inner_macros: false,
-            edition: hygiene::default_edition(),
-        });
-        (item.span.with_ctxt(SyntaxContext::empty().apply_mark(mark)),
-         attr_sp.with_ctxt(SyntaxContext::empty().apply_mark(mark)))
-    };
+    let (sp, attr_sp) = (cx.with_def_site_ctxt(item.span), cx.with_def_site_ctxt(attr_sp));
 
-    // Gensym "test" so we can extern crate without conflicting with any local names
-    let test_id = cx.ident_of("test").gensym();
+    let test_id = ast::Ident::new(sym::test, attr_sp);
 
     // creates test::$name
     let test_path = |name| {
-        cx.path(sp, vec![test_id, cx.ident_of(name)])
+        cx.path(sp, vec![test_id, cx.ident_of(name, sp)])
     };
 
-    // creates test::$name
+    // creates test::ShouldPanic::$name
     let should_panic_path = |name| {
-        cx.path(sp, vec![test_id, cx.ident_of("ShouldPanic"), cx.ident_of(name)])
+        cx.path(sp, vec![test_id, cx.ident_of("ShouldPanic", sp), cx.ident_of(name, sp)])
+    };
+
+    // creates test::TestType::$name
+    let test_type_path = |name| {
+        cx.path(sp, vec![test_id, cx.ident_of("TestType", sp), cx.ident_of(name, sp)])
     };
 
     // creates $name: $expr
-    let field = |name, expr| cx.field_imm(sp, cx.ident_of(name), expr);
+    let field = |name, expr| cx.field_imm(sp, cx.ident_of(name, sp), expr);
 
     let test_fn = if is_bench {
         // A simple ident for a lambda
-        let b = cx.ident_of("b");
+        let b = cx.ident_of("b", attr_sp);
 
         cx.expr_call(sp, cx.expr_path(test_path("StaticBenchFn")), vec![
             // |b| self::test::assert_test_result(
@@ -127,14 +149,14 @@ pub fn expand_test_or_bench(
         ])
     };
 
-    let mut test_const = cx.item(sp, ast::Ident::new(item.ident.name.gensymed(), sp),
+    let mut test_const = cx.item(sp, ast::Ident::new(item.ident.name, sp),
         vec![
             // #[cfg(test)]
-            cx.attribute(attr_sp, cx.meta_list(attr_sp, Symbol::intern("cfg"), vec![
-                cx.meta_list_item_word(attr_sp, Symbol::intern("test"))
+            cx.attribute(attr::mk_list_item(ast::Ident::new(sym::cfg, attr_sp), vec![
+                attr::mk_nested_word_item(ast::Ident::new(sym::test, attr_sp))
             ])),
             // #[rustc_test_marker]
-            cx.attribute(attr_sp, cx.meta_word(attr_sp, Symbol::intern("rustc_test_marker"))),
+            cx.attribute(cx.meta_word(attr_sp, sym::rustc_test_marker)),
         ],
         // const $ident: test::TestDescAndFn =
         ast::ItemKind::Const(cx.ty(sp, ast::TyKind::Path(None, test_path("TestDescAndFn"))),
@@ -166,6 +188,17 @@ pub fn expand_test_or_bench(
                             cx.expr_path(should_panic_path("YesWithMessage")),
                             vec![cx.expr_str(sp, sym)]),
                     }),
+                    // test_type: ...
+                    field("test_type", match test_type(cx) {
+                        // test::TestType::UnitTest
+                        TestType::UnitTest => cx.expr_path(test_type_path("UnitTest")),
+                        // test::TestType::IntegrationTest
+                        TestType::IntegrationTest => cx.expr_path(
+                            test_type_path("IntegrationTest")
+                        ),
+                        // test::TestPath::Unknown
+                        TestType::Unknown => cx.expr_path(test_type_path("Unknown")),
+                    }),
                 // },
                 ])),
                 // testfn: test::StaticTestFn(...) | test::StaticBenchFn(...)
@@ -176,17 +209,17 @@ pub fn expand_test_or_bench(
         ));
     test_const = test_const.map(|mut tc| { tc.vis.node = ast::VisibilityKind::Public; tc});
 
-    // extern crate test as test_gensym
+    // extern crate test
     let test_extern = cx.item(sp,
         test_id,
         vec![],
-        ast::ItemKind::ExternCrate(Some(Symbol::intern("test")))
+        ast::ItemKind::ExternCrate(None)
     );
 
-    log::debug!("Synthetic test item:\n{}\n", pprust::item_to_string(&test_const));
+    log::debug!("synthetic test item:\n{}\n", pprust::item_to_string(&test_const));
 
     vec![
-        // Access to libtest under a gensymed name
+        // Access to libtest under a hygienic name
         Annotatable::Item(test_extern),
         // The generated test case
         Annotatable::Item(test_const),
@@ -206,15 +239,15 @@ enum ShouldPanic {
 }
 
 fn should_ignore(i: &ast::Item) -> bool {
-    attr::contains_name(&i.attrs, "ignore")
+    attr::contains_name(&i.attrs, sym::ignore)
 }
 
 fn should_fail(i: &ast::Item) -> bool {
-    attr::contains_name(&i.attrs, "allow_fail")
+    attr::contains_name(&i.attrs, sym::allow_fail)
 }
 
 fn should_panic(cx: &ExtCtxt<'_>, i: &ast::Item) -> ShouldPanic {
-    match attr::find_by_name(&i.attrs, "should_panic") {
+    match attr::find_by_name(&i.attrs, sym::should_panic) {
         Some(attr) => {
             let ref sd = cx.parse_sess.span_diagnostic;
 
@@ -222,7 +255,7 @@ fn should_panic(cx: &ExtCtxt<'_>, i: &ast::Item) -> ShouldPanic {
                 // Handle #[should_panic(expected = "foo")]
                 Some(list) => {
                     let msg = list.iter()
-                        .find(|mi| mi.check_name("expected"))
+                        .find(|mi| mi.check_name(sym::expected))
                         .and_then(|mi| mi.meta_item())
                         .and_then(|mi| mi.value_str());
                     if list.len() != 1 || msg.is_none() {
@@ -246,10 +279,38 @@ fn should_panic(cx: &ExtCtxt<'_>, i: &ast::Item) -> ShouldPanic {
     }
 }
 
+enum TestType {
+    UnitTest,
+    IntegrationTest,
+    Unknown,
+}
+
+/// Attempts to determine the type of test.
+/// Since doctests are created without macro expanding, only possible variants here
+/// are `UnitTest`, `IntegrationTest` or `Unknown`.
+fn test_type(cx: &ExtCtxt<'_>) -> TestType {
+    // Root path from context contains the topmost sources directory of the crate.
+    // I.e., for `project` with sources in `src` and tests in `tests` folders
+    // (no matter how many nested folders lie inside),
+    // there will be two different root paths: `/project/src` and `/project/tests`.
+    let crate_path = cx.root_path.as_path();
+
+    if crate_path.ends_with("src") {
+        // `/src` folder contains unit-tests.
+        TestType::UnitTest
+    } else if crate_path.ends_with("tests") {
+        // `/tests` folder contains integration tests.
+        TestType::IntegrationTest
+    } else {
+        // Crate layout doesn't match expected one, test type is unknown.
+        TestType::Unknown
+    }
+}
+
 fn has_test_signature(cx: &ExtCtxt<'_>, i: &ast::Item) -> bool {
-    let has_should_panic_attr = attr::contains_name(&i.attrs, "should_panic");
+    let has_should_panic_attr = attr::contains_name(&i.attrs, sym::should_panic);
     let ref sd = cx.parse_sess.span_diagnostic;
-    if let ast::ItemKind::Fn(ref decl, ref header, ref generics, _) = i.node {
+    if let ast::ItemKind::Fn(ref decl, ref header, ref generics, _) = i.kind {
         if header.unsafety == ast::Unsafety::Unsafe {
             sd.span_err(
                 i.span,
@@ -270,7 +331,7 @@ fn has_test_signature(cx: &ExtCtxt<'_>, i: &ast::Item) -> bool {
         // type implements the `Termination` trait as `libtest` enforces that.
         let has_output = match decl.output {
             ast::FunctionRetTy::Default(..) => false,
-            ast::FunctionRetTy::Ty(ref t) if t.node.is_unit() => false,
+            ast::FunctionRetTy::Ty(ref t) if t.kind.is_unit() => false,
             _ => true
         };
 
@@ -300,7 +361,7 @@ fn has_test_signature(cx: &ExtCtxt<'_>, i: &ast::Item) -> bool {
 }
 
 fn has_bench_signature(cx: &ExtCtxt<'_>, i: &ast::Item) -> bool {
-    let has_sig = if let ast::ItemKind::Fn(ref decl, _, _, _) = i.node {
+    let has_sig = if let ast::ItemKind::Fn(ref decl, _, _, _) = i.kind {
         // N.B., inadequate check, but we're running
         // well before resolve, can't get too deep.
         decl.inputs.len() == 1

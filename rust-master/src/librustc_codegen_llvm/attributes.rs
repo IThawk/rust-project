@@ -10,7 +10,6 @@ use rustc::ty::{self, TyCtxt, PolyFnSig};
 use rustc::ty::layout::HasTyCtxt;
 use rustc::ty::query::Providers;
 use rustc_data_structures::small_c_str::SmallCStr;
-use rustc_data_structures::sync::Lrc;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_target::spec::PanicStrategy;
 use rustc_codegen_ssa::traits::*;
@@ -77,9 +76,15 @@ pub fn set_instrument_function(cx: &CodegenCx<'ll, '_>, llfn: &'ll Value) {
     if cx.sess().instrument_mcount() {
         // Similar to `clang -pg` behavior. Handled by the
         // `post-inline-ee-instrument` LLVM pass.
+
+        // The function name varies on platforms.
+        // See test/CodeGen/mcount.c in clang.
+        let mcount_name = CString::new(
+            cx.sess().target.target.options.target_mcount.as_str().as_bytes()).unwrap();
+
         llvm::AddFunctionAttrStringValue(
             llfn, llvm::AttributePlace::Function,
-            const_cstr!("instrument-function-entry-inlined"), const_cstr!("mcount"));
+            const_cstr!("instrument-function-entry-inlined"), &mcount_name);
     }
 }
 
@@ -91,14 +96,16 @@ pub fn set_probestack(cx: &CodegenCx<'ll, '_>, llfn: &'ll Value) {
     }
 
     // Currently stack probes seem somewhat incompatible with the address
-    // sanitizer. With asan we're already protected from stack overflow anyway
-    // so we don't really need stack probes regardless.
-    if let Some(Sanitizer::Address) = cx.sess().opts.debugging_opts.sanitizer {
-        return
+    // sanitizer and thread sanitizer. With asan we're already protected from
+    // stack overflow anyway so we don't really need stack probes regardless.
+    match cx.sess().opts.debugging_opts.sanitizer {
+        Some(Sanitizer::Address) |
+        Some(Sanitizer::Thread) => return,
+        _ => {},
     }
 
-    // probestack doesn't play nice either with pgo-gen.
-    if cx.sess().opts.debugging_opts.pgo_gen.is_some() {
+    // probestack doesn't play nice either with `-C profile-generate`.
+    if cx.sess().opts.cg.profile_generate.enabled() {
         return;
     }
 
@@ -114,6 +121,29 @@ pub fn set_probestack(cx: &CodegenCx<'ll, '_>, llfn: &'ll Value) {
         const_cstr!("probe-stack"), const_cstr!("__rust_probestack"));
 }
 
+fn translate_obsolete_target_features(feature: &str) -> &str {
+    const LLVM9_FEATURE_CHANGES: &[(&str, &str)] = &[
+        ("+fp-only-sp", "-fp64"),
+        ("-fp-only-sp", "+fp64"),
+        ("+d16", "-d32"),
+        ("-d16", "+d32"),
+    ];
+    if llvm_util::get_major_version() >= 9 {
+        for &(old, new) in LLVM9_FEATURE_CHANGES {
+            if feature == old {
+                return new;
+            }
+        }
+    } else {
+        for &(old, new) in LLVM9_FEATURE_CHANGES {
+            if feature == new {
+                return old;
+            }
+        }
+    }
+    feature
+}
+
 pub fn llvm_target_features(sess: &Session) -> impl Iterator<Item = &str> {
     const RUSTC_SPECIFIC_FEATURES: &[&str] = &[
         "crt-static",
@@ -124,6 +154,7 @@ pub fn llvm_target_features(sess: &Session) -> impl Iterator<Item = &str> {
     sess.target.target.options.features.split(',')
         .chain(cmdline)
         .filter(|l| !l.is_empty())
+        .map(translate_obsolete_target_features)
 }
 
 pub fn apply_target_cpu_attr(cx: &CodegenCx<'ll, '_>, llfn: &'ll Value) {
@@ -239,31 +270,37 @@ pub fn from_fn_attrs(
         // optimize based on this!
         false
     } else if codegen_fn_attrs.flags.contains(CodegenFnAttrFlags::UNWIND) {
-        // If a specific #[unwind] attribute is present, use that
+        // If a specific #[unwind] attribute is present, use that.
         true
     } else if codegen_fn_attrs.flags.contains(CodegenFnAttrFlags::RUSTC_ALLOCATOR_NOUNWIND) {
-        // Special attribute for allocator functions, which can't unwind
+        // Special attribute for allocator functions, which can't unwind.
         false
-    } else if let Some(id) = id {
-        let sig = cx.tcx.normalize_erasing_late_bound_regions(ty::ParamEnv::reveal_all(), &sig);
-        if cx.tcx.is_foreign_item(id) {
-            // Foreign items like `extern "C" { fn foo(); }` are assumed not to
-            // unwind
-            false
-        } else if sig.abi != Abi::Rust && sig.abi != Abi::RustCall {
-            // Any items defined in Rust that *don't* have the `extern` ABI are
-            // defined to not unwind. We insert shims to abort if an unwind
-            // happens to enforce this.
-            false
-        } else {
-            // Anything else defined in Rust is assumed that it can possibly
-            // unwind
-            true
-        }
     } else {
-        // assume this can possibly unwind, avoiding the application of a
-        // `nounwind` attribute below.
-        true
+        let sig = cx.tcx.normalize_erasing_late_bound_regions(ty::ParamEnv::reveal_all(), &sig);
+        if sig.abi == Abi::Rust || sig.abi == Abi::RustCall {
+            // Any Rust method (or `extern "Rust" fn` or `extern
+            // "rust-call" fn`) is explicitly allowed to unwind
+            // (unless it has no-unwind attribute, handled above).
+            true
+        } else {
+            // Anything else is either:
+            //
+            //  1. A foreign item using a non-Rust ABI (like `extern "C" { fn foo(); }`), or
+            //
+            //  2. A Rust item using a non-Rust ABI (like `extern "C" fn foo() { ... }`).
+            //
+            // Foreign items (case 1) are assumed to not unwind; it is
+            // UB otherwise. (At least for now; see also
+            // rust-lang/rust#63909 and Rust RFC 2753.)
+            //
+            // Items defined in Rust with non-Rust ABIs (case 2) are also
+            // not supposed to unwind. Whether this should be enforced
+            // (versus stating it is UB) and *how* it would be enforced
+            // is currently under discussion; see rust-lang/rust#58794.
+            //
+            // In either case, we mark item as explicitly nounwind.
+            false
+        }
     });
 
     // Always annotate functions with the target-cpu they are compiled for.
@@ -314,13 +351,13 @@ pub fn provide(providers: &mut Providers<'_>) {
         if tcx.sess.opts.actually_rustdoc {
             // rustdoc needs to be able to document functions that use all the features, so
             // whitelist them all
-            Lrc::new(llvm_util::all_known_features()
-                .map(|(a, b)| (a.to_string(), b.map(|s| s.to_string())))
+            tcx.arena.alloc(llvm_util::all_known_features()
+                .map(|(a, b)| (a.to_string(), b))
                 .collect())
         } else {
-            Lrc::new(llvm_util::target_feature_whitelist(tcx.sess)
+            tcx.arena.alloc(llvm_util::target_feature_whitelist(tcx.sess)
                 .iter()
-                .map(|&(a, b)| (a.to_string(), b.map(|s| s.to_string())))
+                .map(|&(a, b)| (a.to_string(), b))
                 .collect())
         }
     };
@@ -358,11 +395,11 @@ pub fn provide_extern(providers: &mut Providers<'_>) {
             }));
         }
 
-        Lrc::new(ret)
+        tcx.arena.alloc(ret)
     };
 }
 
-fn wasm_import_module(tcx: TyCtxt<'_, '_, '_>, id: DefId) -> Option<CString> {
+fn wasm_import_module(tcx: TyCtxt<'_>, id: DefId) -> Option<CString> {
     tcx.wasm_import_module_map(id.krate)
         .get(&id)
         .map(|s| CString::new(&s[..]).unwrap())

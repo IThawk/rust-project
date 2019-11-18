@@ -3,17 +3,14 @@
 #![feature(box_patterns)]
 #![feature(box_syntax)]
 #![feature(core_intrinsics)]
-#![feature(custom_attribute)]
 #![feature(libc)]
-#![feature(rustc_diagnostic_macros)]
+#![feature(slice_patterns)]
 #![feature(stmt_expr_attributes)]
 #![feature(try_blocks)]
 #![feature(in_band_lifetimes)]
 #![feature(nll)]
-#![allow(unused_attributes)]
-#![allow(dead_code)]
-#![deny(rust_2018_idioms)]
-#![allow(explicit_outlives_requirements)]
+#![feature(trusted_len)]
+#![feature(associated_type_bounds)]
 
 #![recursion_limit="256"]
 
@@ -23,7 +20,6 @@
 
 #[macro_use] extern crate log;
 #[macro_use] extern crate rustc;
-#[macro_use] extern crate rustc_data_structures;
 #[macro_use] extern crate syntax;
 
 use std::path::PathBuf;
@@ -31,22 +27,21 @@ use rustc::dep_graph::WorkProduct;
 use rustc::session::config::{OutputFilenames, OutputType};
 use rustc::middle::lang_items::LangItem;
 use rustc::hir::def_id::CrateNum;
+use rustc::ty::query::Providers;
 use rustc_data_structures::fx::{FxHashMap, FxHashSet};
 use rustc_data_structures::sync::Lrc;
 use rustc_data_structures::svh::Svh;
 use rustc::middle::cstore::{LibSource, CrateSource, NativeLibrary};
+use rustc::middle::dependency_format::Dependencies;
 use syntax_pos::symbol::Symbol;
 
-// N.B., this module needs to be declared first so diagnostics are
-// registered before they are used.
-mod diagnostics;
+mod error_codes;
 
 pub mod common;
 pub mod traits;
 pub mod mir;
 pub mod debuginfo;
 pub mod base;
-pub mod callee;
 pub mod glue;
 pub mod meth;
 pub mod mono_item;
@@ -64,6 +59,7 @@ pub struct ModuleCodegen<M> {
     pub kind: ModuleKind,
 }
 
+pub const METADATA_FILENAME: &str = "rust.metadata.bin";
 pub const RLIB_BYTECODE_EXTENSION: &str = "bc.z";
 
 impl<M> ModuleCodegen<M> {
@@ -129,6 +125,7 @@ bitflags::bitflags! {
 }
 
 /// Misc info we load from metadata to persist beyond the tcx.
+#[derive(Debug)]
 pub struct CrateInfo {
     pub panic_runtime: Option<CrateNum>,
     pub compiler_builtins: Option<CrateNum>,
@@ -144,6 +141,7 @@ pub struct CrateInfo {
     pub used_crates_dynamic: Vec<(CrateNum, LibSource)>,
     pub lang_item_to_crate: FxHashMap<LangItem, CrateNum>,
     pub missing_lang_items: FxHashMap<CrateNum, Vec<LangItem>>,
+    pub dependency_formats: Lrc<Dependencies>,
 }
 
 
@@ -151,7 +149,7 @@ pub struct CodegenResults {
     pub crate_name: Symbol,
     pub modules: Vec<CompiledModule>,
     pub allocator_module: Option<CompiledModule>,
-    pub metadata_module: CompiledModule,
+    pub metadata_module: Option<CompiledModule>,
     pub crate_hash: Svh,
     pub metadata: rustc::middle::cstore::EncodedMetadata,
     pub windows_subsystem: Option<String>,
@@ -159,4 +157,12 @@ pub struct CodegenResults {
     pub crate_info: CrateInfo,
 }
 
-__build_diagnostic_array! { librustc_codegen_ssa, DIAGNOSTICS }
+pub fn provide(providers: &mut Providers<'_>) {
+    crate::back::symbol_export::provide(providers);
+    crate::base::provide_both(providers);
+}
+
+pub fn provide_extern(providers: &mut Providers<'_>) {
+    crate::back::symbol_export::provide_extern(providers);
+    crate::base::provide_both(providers);
+}

@@ -8,13 +8,13 @@
 
 use crate::infer::canonical::{Canonical, CanonicalVarValues};
 use crate::ty::fold::TypeFoldable;
-use crate::ty::subst::UnpackedKind;
+use crate::ty::subst::GenericArgKind;
 use crate::ty::{self, TyCtxt};
 
 impl<'tcx, V> Canonical<'tcx, V> {
     /// Instantiate the wrapped value, replacing each canonical value
     /// with the value given in `var_values`.
-    pub fn substitute(&self, tcx: TyCtxt<'_, '_, 'tcx>, var_values: &CanonicalVarValues<'tcx>) -> V
+    pub fn substitute(&self, tcx: TyCtxt<'tcx>, var_values: &CanonicalVarValues<'tcx>) -> V
     where
         V: TypeFoldable<'tcx>,
     {
@@ -29,7 +29,7 @@ impl<'tcx, V> Canonical<'tcx, V> {
     /// V, replacing each of the canonical variables.
     pub fn substitute_projected<T>(
         &self,
-        tcx: TyCtxt<'_, '_, 'tcx>,
+        tcx: TyCtxt<'tcx>,
         var_values: &CanonicalVarValues<'tcx>,
         projection_fn: impl FnOnce(&V) -> &T,
     ) -> T
@@ -46,7 +46,7 @@ impl<'tcx, V> Canonical<'tcx, V> {
 /// must be values for the set of canonical variables that appear in
 /// `value`.
 pub(super) fn substitute_value<'a, 'tcx, T>(
-    tcx: TyCtxt<'_, '_, 'tcx>,
+    tcx: TyCtxt<'tcx>,
     var_values: &CanonicalVarValues<'tcx>,
     value: &'a T,
 ) -> T
@@ -58,18 +58,25 @@ where
     } else {
         let fld_r = |br: ty::BoundRegion| {
             match var_values.var_values[br.assert_bound_var()].unpack() {
-                UnpackedKind::Lifetime(l) => l,
+                GenericArgKind::Lifetime(l) => l,
                 r => bug!("{:?} is a region but value is {:?}", br, r),
             }
         };
 
         let fld_t = |bound_ty: ty::BoundTy| {
             match var_values.var_values[bound_ty.var].unpack() {
-                UnpackedKind::Type(ty) => ty,
+                GenericArgKind::Type(ty) => ty,
                 r => bug!("{:?} is a type but value is {:?}", bound_ty, r),
             }
         };
 
-        tcx.replace_escaping_bound_vars(value, fld_r, fld_t).0
+        let fld_c = |bound_ct: ty::BoundVar, _| {
+            match var_values.var_values[bound_ct].unpack() {
+                GenericArgKind::Const(ct) => ct,
+                c => bug!("{:?} is a const but value is {:?}", bound_ct, c),
+            }
+        };
+
+        tcx.replace_escaping_bound_vars(value, fld_r, fld_t, fld_c).0
     }
 }

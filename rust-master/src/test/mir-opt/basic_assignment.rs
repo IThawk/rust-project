@@ -5,8 +5,6 @@
 // so subtle breakage in them can leave a quite hard-to-find trail of
 // destruction.
 
-// ignore-tidy-linelength
-
 fn main() {
     let nodrop_x = false;
     let nodrop_y;
@@ -48,7 +46,7 @@ fn main() {
 //        drop(_6) -> [return: bb6, unwind: bb4];
 //    }
 //    ...
-//    bb5: {
+//    bb5 (cleanup): {
 //        drop(_6) -> bb4;
 //    }
 // END rustc.main.SimplifyCfg-initial.after.mir

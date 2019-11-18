@@ -45,7 +45,7 @@ pub enum Component<'tcx> {
     EscapingProjection(Vec<Component<'tcx>>),
 }
 
-impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
+impl<'tcx> TyCtxt<'tcx> {
     /// Push onto `out` all the things that must outlive `'a` for the condition
     /// `ty0: 'a` to hold. Note that `ty0` must be a **fully resolved type**.
     pub fn push_outlives_components(&self, ty0: Ty<'tcx>,
@@ -60,16 +60,16 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         // with `collect()` because of the need to sometimes skip subtrees
         // in the `subtys` iterator (e.g., when encountering a
         // projection).
-        match ty.sty {
+        match ty.kind {
             ty::Closure(def_id, ref substs) => {
-                for upvar_ty in substs.upvar_tys(def_id, *self) {
+                for upvar_ty in substs.as_closure().upvar_tys(def_id, *self) {
                     self.compute_components(upvar_ty, out);
                 }
             }
 
             ty::Generator(def_id, ref substs, _) => {
                 // Same as the closure case
-                for upvar_ty in substs.upvar_tys(def_id, *self) {
+                for upvar_ty in substs.as_generator().upvar_tys(def_id, *self) {
                     self.compute_components(upvar_ty, out);
                 }
 

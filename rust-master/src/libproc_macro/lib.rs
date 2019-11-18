@@ -17,15 +17,16 @@
        test(no_crate_inject, attr(deny(warnings))),
        test(attr(allow(dead_code, deprecated, unused_variables, unused_mut))))]
 
-#![deny(rust_2018_idioms)]
-
 #![feature(nll)]
 #![feature(staged_api)]
+#![feature(allow_internal_unstable)]
 #![feature(const_fn)]
+#![feature(decl_macro)]
 #![feature(extern_types)]
 #![feature(in_band_lifetimes)]
 #![feature(optin_builtin_traits)]
 #![feature(non_exhaustive)]
+#![feature(rustc_attrs)]
 #![feature(specialization)]
 
 #![recursion_limit="256"]
@@ -160,9 +161,7 @@ impl iter::FromIterator<TokenTree> for TokenStream {
 impl iter::FromIterator<TokenStream> for TokenStream {
     fn from_iter<I: IntoIterator<Item = TokenStream>>(streams: I) -> Self {
         let mut builder = bridge::client::TokenStreamBuilder::new();
-        for stream in streams {
-            builder.push(stream.0);
-        }
+        streams.into_iter().for_each(|stream| builder.push(stream.0));
         TokenStream(builder.build())
     }
 }
@@ -225,11 +224,10 @@ pub mod token_stream {
 ///
 /// Unquoting is done with `$`, and works by taking the single next ident as the unquoted term.
 /// To quote `$` itself, use `$$`.
-///
-/// This is a dummy macro, the actual implementation is in `quote::quote`.`
 #[unstable(feature = "proc_macro_quote", issue = "54722")]
-#[macro_export]
-macro_rules! quote { () => {} }
+#[allow_internal_unstable(proc_macro_def_site)]
+#[rustc_builtin_macro]
+pub macro quote ($($t:tt)*) { /* compiler built-in */ }
 
 #[unstable(feature = "proc_macro_internals", issue = "27812")]
 #[doc(hidden)]
@@ -270,6 +268,15 @@ impl Span {
     #[stable(feature = "proc_macro_lib2", since = "1.29.0")]
     pub fn call_site() -> Span {
         Span(bridge::client::Span::call_site())
+    }
+
+    /// A span that represents `macro_rules` hygiene, and sometimes resolves at the macro
+    /// definition site (local variables, labels, `$crate`) and sometimes at the macro
+    /// call site (everything else).
+    /// The span location is taken from the call-site.
+    #[unstable(feature = "proc_macro_mixed_site", issue = "65049")]
+    pub fn mixed_site() -> Span {
+        Span(bridge::client::Span::mixed_site())
     }
 
     /// The original source file into which this span points.
@@ -331,6 +338,18 @@ impl Span {
     #[unstable(feature = "proc_macro_span", issue = "54725")]
     pub fn eq(&self, other: &Span) -> bool {
         self.0 == other.0
+    }
+
+    /// Returns the source text behind a span. This preserves the original source
+    /// code, including spaces and comments. It only returns a result if the span
+    /// corresponds to real source code.
+    ///
+    /// Note: The observable result of a macro should only rely on the tokens and
+    /// not on this source text. The result of this function is a best effort to
+    /// be used for diagnostics only.
+    #[unstable(feature = "proc_macro_span", issue = "54725")]
+    pub fn source_text(&self) -> Option<String> {
+        self.0.source_text()
     }
 
     diagnostic_method!(error, Level::Error);

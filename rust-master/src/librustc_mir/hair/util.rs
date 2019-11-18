@@ -1,8 +1,8 @@
 use rustc::hir;
 use rustc::ty::{self, CanonicalUserType, TyCtxt, UserType};
 
-crate trait UserAnnotatedTyHelpers<'gcx: 'tcx, 'tcx> {
-    fn tcx(&self) -> TyCtxt<'_, 'gcx, 'tcx>;
+crate trait UserAnnotatedTyHelpers<'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx>;
 
     fn tables(&self) -> &ty::TypeckTables<'tcx>;
 
@@ -17,7 +17,7 @@ crate trait UserAnnotatedTyHelpers<'gcx: 'tcx, 'tcx> {
         let mut user_ty = *user_provided_types.get(hir_id)?;
         debug!("user_subts_applied_to_ty_of_hir_id: user_ty={:?}", user_ty);
         let ty = self.tables().node_type(hir_id);
-        match ty.sty {
+        match ty.kind {
             ty::Adt(adt_def, ..) => {
                 if let UserType::TypeOf(ref mut did, _) = &mut user_ty.value {
                     *did = adt_def.did;
