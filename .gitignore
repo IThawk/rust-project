@@ -7,3 +7,13 @@
 /rust-data-struct/.idea
 /rust-data-struct/*.lock
 /rust-demo/http_demo/.idea
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+/target
+**/*.rs.bk
+/rust-demo/hello_world/.idea
+/rust-demo/data_demo/.idea
