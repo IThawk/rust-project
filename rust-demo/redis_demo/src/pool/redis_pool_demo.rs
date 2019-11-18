@@ -8,7 +8,7 @@ pub fn pool_redis_main() {
     let a = new_pool("redis://:123456@192.168.101.13:16379");
     let b = set_string_value("test1".to_string(), a)
         .and_then(|value| {
-            println!("get value:{}",value);
+            println!("get value:{}", value);
             Ok(())
         });
     tokio::run(b);
@@ -37,9 +37,9 @@ fn set_string_value(key: String, pool: Arc<Pool<RedisManager>>) -> impl Future<I
                 })
         }
         ).then(move |result| {
-        match result {
-            Ok(v) => Ok(v),
-            Err(e) => Err(())
-        }
+            match result {
+                Ok(v) => Ok(v),
+                Err(e) => Err(())
+            }
     })
 }
