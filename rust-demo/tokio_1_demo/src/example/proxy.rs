@@ -32,6 +32,9 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{copy, shutdown};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::prelude::*;
+#[cfg(not(target_os = "windows"))]
+use tokio::net::unix::{UnixListener, UnixStream};
+
 
 fn main() -> Result<(), Box<std::error::Error>> {
     let listen_addr = env::args().nth(1).unwrap_or("127.0.0.1:8081".to_string());
@@ -40,10 +43,19 @@ fn main() -> Result<(), Box<std::error::Error>> {
     let server_addr = env::args().nth(2).unwrap_or("127.0.0.1:8080".to_string());
     let server_addr = server_addr.parse::<SocketAddr>()?;
 
-    // Create a TCP listener which will listen for incoming connections.
-    let socket = TcpListener::bind(&listen_addr)?;
-    println!("Listening on: {}", listen_addr);
-    println!("Proxying to: {}", server_addr);
+    #[cfg(not(target_os = "windows"))]
+        {
+            // Create a TCP listener which will listen for incoming connections.
+            let socket = TcpListener::bind(&listen_addr)?;
+            println!("Listening on: {}", listen_addr);
+            println!("Proxying to: {}", server_addr);
+
+            let a = UnixListener::bind("/root.socket")?;
+
+
+            let b = a.incoming().map_err(|e| println!("error accepting socket; error = {:?}", e)).for_each(|c| {});
+        }
+
 
     let done = socket
         .incoming()

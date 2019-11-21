@@ -17,3 +17,8 @@
 **/*.rs.bk
 /rust-demo/hello_world/.idea
 /rust-demo/data_demo/.idea
+/rust-demo/mysql_demo/*.lock
+/rust-demo/mysql_demo/*
+/rust-demo/tokio_1_demo/*.lock
+/rust-demo/tokio_1_demo/*
+/rust-demo/redis_demo/.idea
