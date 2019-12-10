@@ -37,9 +37,9 @@ fn set_string_value(key: String, pool: Arc<Pool<RedisManager>>) -> impl Future<I
                 })
         }
         ).then(move |result| {
-            match result {
-                Ok(v) => Ok(v),
-                Err(e) => Err(())
-            }
+        match result {
+            Ok(v) => Ok(v),
+            Err(e) => Err(())
+        }
     })
 }

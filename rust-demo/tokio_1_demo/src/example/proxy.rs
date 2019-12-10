@@ -42,11 +42,11 @@ fn main() -> Result<(), Box<std::error::Error>> {
 
     let server_addr = env::args().nth(2).unwrap_or("127.0.0.1:8080".to_string());
     let server_addr = server_addr.parse::<SocketAddr>()?;
-
+    let socket;
     #[cfg(not(target_os = "windows"))]
         {
             // Create a TCP listener which will listen for incoming connections.
-            let socket = TcpListener::bind(&listen_addr)?;
+            socket = TcpListener::bind(&listen_addr)?;
             println!("Listening on: {}", listen_addr);
             println!("Proxying to: {}", server_addr);
 
@@ -55,7 +55,13 @@ fn main() -> Result<(), Box<std::error::Error>> {
 
             let b = a.incoming().map_err(|e| println!("error accepting socket; error = {:?}", e)).for_each(|c| {});
         }
-
+    #[cfg(target_os = "windows")]
+        {
+            // Create a TCP listener which will listen for incoming connections.
+            socket = TcpListener::bind(&listen_addr)?;
+            println!("Listening on: {}", listen_addr);
+            println!("Proxying to: {}", server_addr);
+        }
 
     let done = socket
         .incoming()

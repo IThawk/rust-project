@@ -52,6 +52,14 @@ use std::sync::{Arc, Mutex};
 use tokio::io::{lines, write_all};
 use tokio::net::TcpListener;
 use tokio::prelude::*;
+use tokio_io::io::{WriteHalf, WriteAll};
+use self::tokio::net::TcpStream;
+
+use std::time::{Duration, Instant};
+use tokio::prelude::*;
+use tokio::timer::Interval;
+
+
 
 /// The in-memory database shared amongst all clients.
 ///
@@ -83,6 +91,15 @@ enum Response {
     },
 }
 
+
+pub fn tiny_db_main(){
+    match main() {
+        Ok(x)=>println!("ddddd"),
+        Err(e)=>eprintln!("......{:?}",e)
+    }
+}
+
+
 fn main() -> Result<(), Box<std::error::Error>> {
     // Parse the address we're going to run this server on
     // and set up our TCP listener to accept connections.
@@ -106,25 +123,11 @@ fn main() -> Result<(), Box<std::error::Error>> {
         .incoming()
         .map_err(|e| println!("error accepting socket; error = {:?}", e))
         .for_each(move |socket| {
-            // As with many other small examples, the first thing we'll do is
-            // *split* this TCP stream into two separately owned halves. This'll
-            // allow us to work with the read and write halves independently.
+
             let (reader, writer) = socket.split();
 
-            // Since our protocol is line-based we use `tokio_io`'s `lines` utility
-            // to convert our stream of bytes, `reader`, into a `Stream` of lines.
             let lines = lines(BufReader::new(reader));
 
-            // Here's where the meat of the processing in this server happens. First
-            // we see a clone of the database being created, which is creating a
-            // new reference for this connected client to use. Also note the `move`
-            // keyword on the closure here which moves ownership of the reference
-            // into the closure, which we'll need for spawning the client below.
-            //
-            // The `map` function here means that we'll run some code for all
-            // requests (lines) we receive from the client. The actual handling here
-            // is pretty simple, first we parse the request and if it's valid we
-            // generate a response based on the values in the database.
             let db = db.clone();
             let responses = lines.map(move |line| {
                 let request = match Request::parse(&line) {
@@ -154,10 +157,6 @@ fn main() -> Result<(), Box<std::error::Error>> {
                 }
             });
 
-            // At this point `responses` is a stream of `Response` types which we
-            // now want to write back out to the client. To do that we use
-            // `Stream::fold` to perform a loop here, serializing each response and
-            // then writing it out to the client.
             let writes = responses.fold(writer, |writer, response| {
                 let mut response = response.serialize();
                 response.push('\n');
@@ -169,12 +168,32 @@ fn main() -> Result<(), Box<std::error::Error>> {
             // that we see.
             let msg = writes.then(move |_| Ok(()));
 
-            tokio::spawn(msg)
+            tokio::spawn(msg);
+//            let task = Interval::new(Instant::now(), Duration::from_millis(100))
+//                .take(10)
+//                .for_each(|instant| {
+//                    let response =  Response::Set {
+//                        key:"OK".to_string(),
+//                        value:"OK".to_string(),
+//                        previous:Some("OK".to_string()),
+//                    };
+//                    let response = response.serialize();
+//                    write_all(writer, response.into_bytes()).then(|_|{
+//                        Ok(())
+//                    })
+////                    Ok(())
+//                })
+//                .map_err(|e| panic!("interval errored; err={:?}", e));
+//            tokio::spawn(task);
+            Ok(())
+
         });
 
     tokio::run(done);
     Ok(())
 }
+
+
 
 impl Request {
     fn parse(input: &str) -> Result<Request, String> {
