@@ -22,3 +22,8 @@
 /rust-demo/tokio_1_demo/*.lock
 /rust-demo/tokio_1_demo/*
 /rust-demo/redis_demo/.idea
+/rust-demo/websocket_demo/*.lock
+/rust-demo/websocket_demo/.idea
+/rust-demo/websocket_demo/.idea/*.xml
+/rust-demo/websocket_demo/.idea/*.iml
+/rust-demo/websocket_demo/target
