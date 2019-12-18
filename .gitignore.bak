@@ -2,4 +2,26 @@
 /rust-demo/hello_world/*.lock
 /rust-demo/data_demo/target
 /rust-demo/http_demo/target
-/rust-demo/http_demo/*
+/rust-demo/http_demo/*.lock
+/rust-data-struct/target
+/rust-data-struct/.idea
+/rust-data-struct/*.lock
+/rust-demo/http_demo/.idea
+
+
+#Added by cargo
+#
+#already existing elements are commented out
+
+/target
+**/*.rs.bk
+/rust-demo/hello_world/.idea
+/rust-demo/data_demo/.idea
+/rust-demo/mysql_demo/*.lock
+/rust-demo/mysql_demo/*
+/rust-demo/tokio_1_demo/*.lock
+/rust-demo/tokio_1_demo/*
+/rust-demo/redis_demo/.idea
+/rust-demo/websocket_demo/*
+/rust-demo/websocket_demo/*.lock
+/rust-demo/websocket_demo/.idea
