@@ -1,17 +1,16 @@
 use redis::{Commands, Connection, RedisResult};
 
 pub fn single_redis_main() {
-//    if let Ok(mut conn) = get_connection("redis://:123456@192.168.101.13:16379") {
-//        set_string_value("test1", "test1", &mut conn);
-//    };
+    //    if let Ok(mut conn) = get_connection("redis://:123456@192.168.101.13:16379") {
+    //        set_string_value("test1", "test1", &mut conn);
+    //    };
     //test uds连接
     if let Ok(mut conn) = get_connection("unix:/var/run/redis/redis.sock") {
         set_string_value("test1", "test1", &mut conn);
-        let v = get_string_value("test1",&mut conn).unwrap();
-        println!("lsls{}",v);
+        let v = get_string_value("test1", &mut conn).unwrap();
+        println!("lsls{}", v);
     };
 }
-
 
 fn get_connection(path: &str) -> RedisResult<(Connection)> {
     let client = redis::Client::open(path)?;

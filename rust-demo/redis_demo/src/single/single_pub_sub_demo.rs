@@ -1,24 +1,19 @@
-use std::thread;
 use redis::{Commands, ControlFlow, PubSubCommands};
+use std::thread;
 use std::time::Duration;
 
 pub fn single_pub_sub_main() {
     let a = scoped_pubsub();
-//    test();
-//    println!("{:?}", a);
+    //    test();
+    //    println!("{:?}", a);
 }
-
 
 pub fn single_pub_sub() -> redis::RedisResult<()> {
     println!("sub pub");
 
-
-    thread::spawn(|| {
-        loop {
-            pub_msg();
-        }
+    thread::spawn(|| loop {
+        pub_msg();
     });
-
 
     let client = redis::Client::open("redis://:123456@192.168.101.13:16379")?;
     let mut con = client.get_connection()?;
@@ -34,15 +29,14 @@ pub fn pub_msg() -> redis::RedisResult<()> {
     println!("sub");
     let client = redis::Client::open("redis://:123456@192.168.101.13:16379")?;
     let mut con = client.get_connection()?;
-//    let mut pubsub = con.as_pubsub();
+    //    let mut pubsub = con.as_pubsub();
 
-//    pubsub.subscribe("channel_1")?;
+    //    pubsub.subscribe("channel_1")?;
 
-//    con.publish("chhh",23);
+    //    con.publish("chhh",23);
 
     Ok(())
 }
-
 
 pub fn sub_msg() -> redis::RedisResult<()> {
     let client = redis::Client::open("redis://:123456@192.168.101.13:16379")?;
@@ -60,7 +54,6 @@ pub fn sub_msg() -> redis::RedisResult<()> {
 fn scoped_pubsub() -> redis::RedisResult<()> {
     let client = redis::Client::open("redis://:123456@192.168.101.13:16379").unwrap();
     let mut con = client.get_connection().unwrap();
-
 
     let mut pubsub_con = client.get_connection().unwrap();
 
@@ -102,9 +95,8 @@ fn scoped_pubsub() -> redis::RedisResult<()> {
         thread::sleep(Duration::from_millis(1000));
 
         con.publish("bar", 23)?;
-//        assert_eq!(con.publish("bar", 23), Ok(1));
+        //        assert_eq!(con.publish("bar", 23), Ok(1));
     }
-
 
     // Wait for thread
     let mut pubsub_con = thread.join().ok().expect("pubsub thread terminates ok");
@@ -115,4 +107,3 @@ fn scoped_pubsub() -> redis::RedisResult<()> {
     assert_eq!(&foo[..], "bar");
     Ok(())
 }
-

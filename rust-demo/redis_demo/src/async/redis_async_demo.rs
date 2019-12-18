@@ -6,7 +6,6 @@ pub fn single_redis_main() {
     };
 }
 
-
 fn get_connection(path: &str) -> RedisResult<(Connection)> {
     let client = redis::Client::open(path)?;
     let mut con = client.get_connection()?;
@@ -25,4 +24,3 @@ fn set_string_value(key: &str, value: &str, con: &mut Connection) -> Result<(), 
         }
     }
 }
-
