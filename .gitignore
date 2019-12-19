@@ -27,3 +27,6 @@
 /rust-demo/websocket_demo/.idea/*.xml
 /rust-demo/websocket_demo/.idea/*.iml
 /rust-demo/websocket_demo/target
+/rust-demo/actix_web_demo/.idea
+/rust-demo/actix_web_demo/target
+/rust-demo/actix_web_demo/Cargo.lock
