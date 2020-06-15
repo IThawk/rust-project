@@ -12,7 +12,6 @@ fn main() {
     //获取环境变量 Redis
     let a = std::env::var("redis").unwrap_or("hello".to_string());
     println!("{}", a);
-    //    single_redis_main();
     println!("Hello, world!");
     loop {
         let a = Duration::from_secs(5);
