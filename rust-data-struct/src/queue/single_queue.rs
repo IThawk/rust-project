@@ -1,10 +1,10 @@
-use std::vec::Vec;
-use std::option::Option::Some;
-use std::option::Option::None;
-use std::option::Option;
 use std::clone::Clone;
 use std::default::Default;
 use std::fmt::Debug;
+use std::option::Option;
+use std::option::Option::None;
+use std::option::Option::Some;
+use std::vec::Vec;
 
 static DEFAULT_SIZE: usize = 8;
 
@@ -17,7 +17,8 @@ pub struct SingleQueue<T> {
 }
 
 impl<T> SingleQueue<T>
-    where T: Clone + Default + Debug
+where
+    T: Clone + Default + Debug,
 {
     pub fn new(size: usize) -> SingleQueue<T> {
         SingleQueue {
@@ -54,7 +55,6 @@ impl<T> SingleQueue<T>
         }
     }
 
-
     pub fn is_full(&self) -> bool {
         let size = self.rear + 1;
         let size = size as usize;
@@ -78,7 +78,10 @@ impl<T> SingleQueue<T>
     }
 }
 
-impl<T> Default for SingleQueue<T> where T: Clone + Default + Debug {
+impl<T> Default for SingleQueue<T>
+where
+    T: Clone + Default + Debug,
+{
     fn default() -> SingleQueue<T> {
         SingleQueue {
             data: vec![T::default(); DEFAULT_SIZE],

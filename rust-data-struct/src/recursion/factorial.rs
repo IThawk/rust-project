@@ -1,7 +1,7 @@
 pub fn factorial_main() {
     let i = 5;
     let a = factorial_i32(i);
-    println!("{}的阶乘是：{}",i,a);
+    println!("{}的阶乘是：{}", i, a);
 }
 
 ///这个是递归求阶乘

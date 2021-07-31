@@ -1,14 +1,16 @@
+mod Algorithms;
+mod linked_list;
 mod queue;
-mod two_arrays;
 mod recursion;
+mod two_arrays;
 use queue::SingleQueue;
-use std::string::String;
 use recursion::factorial;
+use std::string::String;
 
 fn main() {
-    let mut a : SingleQueue<String> = SingleQueue::new(2);
+    let mut a: SingleQueue<String> = SingleQueue::new(2);
     a.add(String::from("ithawk"));
-    println!("Hello, world!{:?}",a.len());
+    println!("Hello, world!{:?}", a.len());
 
     factorial::factorial_main();
 }

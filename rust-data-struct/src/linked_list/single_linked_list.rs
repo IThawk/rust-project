@@ -1,10 +1,11 @@
-use std::vec::Vec;
-use std::option::Option::Some;
-use std::option::Option::None;
-use std::option::Option;
+use crate::queue::SingleQueue;
 use std::clone::Clone;
 use std::default::Default;
 use std::fmt::Debug;
+use std::option::Option;
+use std::option::Option::None;
+use std::option::Option::Some;
+use std::vec::Vec;
 
 static DEFAULT_SIZE: usize = 8;
 
@@ -16,11 +17,12 @@ pub struct SingleLinedList<T> {
     pub size: usize,
 }
 
-impl<T> SingleQueue<T>
-    where T: Clone + Default + Debug
+impl<T> SingleLinedList<T>
+where
+    T: Clone + Default + Debug,
 {
-    pub fn new(size: usize) -> SingleQueue<T> {
-        SingleQueue {
+    pub fn new(size: usize) -> SingleLinedList<T> {
+        SingleLinedList {
             data: vec![T::default(); size],
             font: -1,
             rear: -1,
@@ -54,7 +56,6 @@ impl<T> SingleQueue<T>
         }
     }
 
-
     pub fn is_full(&self) -> bool {
         let size = self.rear + 1;
         let size = size as usize;
@@ -78,9 +79,12 @@ impl<T> SingleQueue<T>
     }
 }
 
-impl<T> Default for SingleQueue<T> where T: Clone + Default + Debug {
-    fn default() -> SingleQueue<T> {
-        SingleQueue {
+impl<T> Default for SingleLinedList<T>
+where
+    T: Clone + Default + Debug,
+{
+    fn default() -> SingleLinedList<T> {
+        SingleLinedList {
             data: vec![T::default(); DEFAULT_SIZE],
             font: -1,
             rear: -1,
@@ -88,7 +92,7 @@ impl<T> Default for SingleQueue<T> where T: Clone + Default + Debug {
         }
     }
 }
-struct Node<T>{
-    pub data:T,
-    pub next:Box<Option<Node<T>>>
+struct Node<T> {
+    pub data: T,
+    pub next: Box<Option<Node<T>>>,
 }

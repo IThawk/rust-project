@@ -5,6 +5,7 @@ extern crate env_logger;
 extern crate chrono;
 mod string;
 mod hash_ex;
+mod leetcode_ex;
 use  hash_ex::*;
 mod arc_mutex_ex;
 use arc_mutex_ex::*;
