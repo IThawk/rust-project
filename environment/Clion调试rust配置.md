@@ -4,8 +4,8 @@ Clion rust环境搭建：
 
 2：配置环境：
 
-![](F:\workspace\language\rust\rust-project\environment\images\windows_clion1.png)
+![](.\images\windows_clion1.png)
 
 3：添加GCC调试：
 
-![](F:\workspace\language\rust\rust-project\environment\images\windows_clion2.png)
+![](.\images\windows_clion2.png)
