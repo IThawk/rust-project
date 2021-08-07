@@ -13,46 +13,46 @@ struct Solution {}
 著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。
 */
 impl Solution {
-    pub fn exist(board: Vec<Vec<char>>, word: String) -> bool {
-        let mut runEx = HashSet::new();
-        let mut v = Vec::new();
-        //找到包含第一个
-
-        for i in (0..board.len()) {
-            for j in board.get(i) {
-                if word.chars()[0] == j {
-                    v.push(i + "-" + j);
-                    runEx.insert(i + "-" + j);
-                    break;
-                }
-            }
-        }
-        if v.len() == 0 {
-            return false;
-        }
-        for i in (1..word.len()) {
-            let index_op = v.get(i-1);
-            let a:String =match index_op{
-                Some(i) => i.to_string(),
-                None=>String::new()
-            };
-            if a=="" {
-                return false;
-            }
-            let x_i = a.split("-");
-            let a = x_i[0] as usize;
-            let b = x_i[1] as usize;
-            //向上走
-            if a>0 {
-                let aT = a-1;
-                if  (!runEx.contains(aT+"-"+b)){
-
-                }
-            }
-
-        }
-        return false;
-    }
+    // pub fn exist(board: Vec<Vec<char>>, word: String) -> bool {
+    //     let mut runEx = HashSet::new();
+    //     let mut v = Vec::new();
+    //     //找到包含第一个
+    //
+    //     for i in (0..board.len()) {
+    //         for j in board.get(i) {
+    //             if word.chars()[0] == j {
+    //                 v.push(i + "-" + j);
+    //                 runEx.insert(i + "-" + j);
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     if v.len() == 0 {
+    //         return false;
+    //     }
+    //     for i in (1..word.len()) {
+    //         let index_op = v.get(i-1);
+    //         let a:String =match index_op{
+    //             Some(i) => i.to_string(),
+    //             None=>String::new()
+    //         };
+    //         if a=="" {
+    //             return false;
+    //         }
+    //         let x_i = a.split("-");
+    //         let a = x_i[0] as usize;
+    //         let b = x_i[1] as usize;
+    //         //向上走
+    //         if a>0 {
+    //             let aT = a-1;
+    //             if  (!runEx.contains(aT+"-"+b)){
+    //
+    //             }
+    //         }
+    //
+    //     }
+    //     return false;
+    // }
 }
 
 
@@ -64,5 +64,5 @@ fn test() {
     a.push(2);
     a.push(0);
     a.push(1);
-    println!("{}", Solution::exist(a));
+    // println!("{}", Solution::exist(a));
 }
